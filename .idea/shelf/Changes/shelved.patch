@@ -1,0 +1,1378 @@
+Index: lab/lab_1/sort.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>/*\r\n * Сортировка вставками (Insertion Sort)\r\n *\r\n * Реализация алгоритма сортировки вставками с анализом производительности.\r\n * Программа выполняет серию тестов для различных размеров массива,\r\n * собирает статистику времени выполнения и строит графики для визуализации результатов.\r\n *\r\n * @module insertion-sort-analysis\r\n */\r\n\r\nconst fs = require('fs');\r\nconst { createCanvas } = require('canvas');\r\n\r\n/**\r\n * Массив размеров тестируемых массивов.\r\n * @constant {number[]}\r\n */\r\nconst arr = [1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000];\r\n\r\n/**\r\n * Объект для хранения результатов замеров по каждому размеру N.\r\n * Ключ - размер массива, значение - массив времен выполнения (20 замеров).\r\n * @type {Object.<number, number[]>}\r\n */\r\nconst results = {};\r\n\r\n/**\r\n * Массив всех точек замеров для общего графика.\r\n * @type {Array<{N: number, time: number}>}\r\n */\r\nconst allPoints = [];\r\n\r\n// Инициализация массива результатов для каждого N\r\nfor (const N of arr) {\r\n    results[N] = [];\r\n}\r\n\r\nconsole.log('тесты для всех значений N из списка (1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000)\\n');\r\n\r\n// Основной цикл тестирования\r\nfor (const N of arr) {\r\n    console.log(`=== Тест для N = ${N} ===`);\r\n\r\n    // Выполняем 20 тестов для каждого размера массива\r\n    for (let test = 1; test <= 20; test++) {\r\n        /**\r\n         * Генерируем случайный массив указанного размера\r\n         * со значениями в диапазоне [-1, 1]\r\n         */\r\n        const vectorToSort = [];\r\n        for (let i = 0; i < N; i++) {\r\n            vectorToSort[i] = Math.random() * 2 - 1;\r\n        }\r\n\r\n        // Замеряем время сортировки\r\n        const start = performance.now();\r\n        insertionSort(vectorToSort);\r\n        const end = performance.now();\r\n\r\n        const timeMs = end - start;\r\n\r\n        console.log(`Тест ${test}: ${timeMs.toFixed(3)} мс`);\r\n\r\n        // Сохраняем результаты\r\n        results[N].push(timeMs);\r\n        allPoints.push({ N, time: timeMs });\r\n    }\r\n    console.log('');\r\n}\r\n\r\n/**\r\n * Сохраняем все результаты в CSV файл для дальнейшего анализа.\r\n * Формат: N, Test, Time_ms\r\n */\r\nlet csvContent = 'N,Test,Time_ms\\n';\r\nfor (const N of arr) {\r\n    results[N].forEach((time, index) => {\r\n        csvContent += `${N},${index + 1},${time.toFixed(3)}\\n`;\r\n    });\r\n}\r\nfs.writeFileSync('results.csv', csvContent);\r\nconsole.log('Результаты сохранены в results.csv\\n');\r\n\r\n// Анализируем результаты\r\nconsole.log('Анализ результатов:');\r\n\r\n/**\r\n * Находим подходящую константу C для теоретической кривой O(n²)\r\n * Используем максимальное отношение время/(N²) для больших N (≥16000)\r\n * и добавляем запас 20% для наглядности графика\r\n *\r\n * @type {number}\r\n */\r\nlet maxRatio = 0;\r\nfor (const N of arr) {\r\n    if (N >= 16000) {\r\n        const worstTime = Math.max(...results[N]);\r\n        const ratio = worstTime / (N * N);\r\n        if (ratio > maxRatio) maxRatio = ratio;\r\n    }\r\n}\r\nconst C = maxRatio * 1.2;\r\n\r\nconsole.log('\\nN\\tМинимальное\\tМаксимальное\\tСреднее');\r\nconsole.log('-'.repeat(60));\r\n\r\n/**\r\n * Массивы данных для построения графиков\r\n * @type {Array<{N: number, time: number}>}\r\n */\r\nconst theoreticalData = []; // Теоретическая кривая O(n²)\r\nconst minData = [];          // Лучший случай (минимумы)\r\nconst maxData = [];          // Худший случай (максимумы)\r\nconst avgData = [];          // Средний случай\r\n\r\n// Собираем статистику по каждому размеру массива\r\nfor (const N of arr) {\r\n    const times = results[N];\r\n    const min = Math.min(...times);\r\n    const max = Math.max(...times);\r\n    const avg = times.reduce((a, b) => a + b, 0) / times.length;\r\n\r\n    minData.push({ N, time: min });\r\n    maxData.push({ N, time: max });\r\n    avgData.push({ N, time: avg });\r\n\r\n    // Для дополнительного задания - теоретическая кривая\r\n    theoreticalData.push({ N, time: C * N * N });\r\n\r\n    console.log(`${N}\\t${min.toFixed(3)} мс\\t\\t${max.toFixed(3)} мс\\t\\t${avg.toFixed(3)} мс`);\r\n}\r\n\r\nconsole.log(`\\nДля дополнительного задания: C = ${C.toExponential(4)}`);\r\n\r\n/**\r\n * Создает и настраивает холст для рисования графиков\r\n *\r\n * @param {number} width - Ширина холста в пикселях\r\n * @param {number} height - Высота холста в пикселях\r\n * @param {string} title - Заголовок графика\r\n * @returns {Object} Объект с контекстом рисования и параметрами\r\n */\r\nfunction setupCanvas(width, height, title) {\r\n    const canvas = createCanvas(width, height);\r\n    const ctx = canvas.getContext('2d');\r\n\r\n    // Белый фон\r\n    ctx.fillStyle = '#ffffff';\r\n    ctx.fillRect(0, 0, width, height);\r\n\r\n    // Заголовок\r\n    ctx.font = 'bold 24px Arial';\r\n    ctx.fillStyle = '#000000';\r\n    ctx.textAlign = 'center';\r\n    ctx.fillText(title, width / 2, 30);\r\n\r\n    return { canvas, ctx };\r\n}\r\n\r\n/**\r\n * Рисует оси координат на графике\r\n *\r\n * @param {CanvasRenderingContext2D} ctx - Контекст рисования\r\n * @param {Object} padding - Отступы от краев холста\r\n * @param {number} width - Ширина холста\r\n * @param {number} height - Высота холста\r\n * @param {number[]} xValues - Значения для оси X (размеры массивов)\r\n * @param {number} maxY - Максимальное значение по оси Y для масштабирования\r\n */\r\nfunction drawAxes(ctx, padding, width, height, xValues, maxY) {\r\n    const graphWidth = width - padding.left - padding.right;\r\n    const graphHeight = height - padding.top - padding.bottom;\r\n    const xStep = graphWidth / (xValues.length - 1);\r\n\r\n    // Рисуем оси\r\n    ctx.strokeStyle = '#000000';\r\n    ctx.lineWidth = 2;\r\n    ctx.beginPath();\r\n    ctx.moveTo(padding.left, padding.top);\r\n    ctx.lineTo(padding.left, height - padding.bottom);\r\n    ctx.lineTo(width - padding.right, height - padding.bottom);\r\n    ctx.stroke();\r\n\r\n    // Подписи осей\r\n    ctx.font = '16px Arial';\r\n    ctx.fillStyle = '#000000';\r\n    ctx.textAlign = 'center';\r\n    ctx.fillText('Размер массива (N)', width / 2, height - 20);\r\n\r\n    ctx.save();\r\n    ctx.translate(20, height / 2);\r\n    ctx.rotate(-Math.PI / 2);\r\n    ctx.fillText('Время сортировки (мс)', 0, 0);\r\n    ctx.restore();\r\n\r\n    // Деления на оси X\r\n    for (let i = 0; i < xValues.length; i++) {\r\n        const x = padding.left + (i * xStep);\r\n        const N = xValues[i];\r\n\r\n        ctx.beginPath();\r\n        ctx.moveTo(x, height - padding.bottom);\r\n        ctx.lineTo(x, height - padding.bottom + 10);\r\n        ctx.stroke();\r\n\r\n        ctx.font = '12px Arial';\r\n        ctx.fillStyle = '#666666';\r\n        ctx.textAlign = 'center';\r\n        ctx.fillText(N.toString(), x, height - padding.bottom + 25);\r\n    }\r\n\r\n    // Деления на оси Y\r\n    const yStep = graphHeight / 5;\r\n    for (let i = 0; i <= 5; i++) {\r\n        const y = height - padding.bottom - (i * yStep);\r\n        const value = (i * maxY / 5).toFixed(2);\r\n\r\n        ctx.beginPath();\r\n        ctx.moveTo(padding.left - 10, y);\r\n        ctx.lineTo(padding.left, y);\r\n        ctx.stroke();\r\n\r\n        ctx.font = '12px Arial';\r\n        ctx.fillStyle = '#666666';\r\n        ctx.textAlign = 'right';\r\n        ctx.fillText(value + ' мс', padding.left - 15, y + 4);\r\n    }\r\n\r\n    return { graphWidth, graphHeight, xStep };\r\n}\r\n\r\n/**\r\n * Рисует линию графика по точкам данных\r\n *\r\n * @param {CanvasRenderingContext2D} ctx - Контекст рисования\r\n * @param {Array<{N: number, time: number}>} data - Массив точек для графика\r\n * @param {string} color - Цвет линии в HEX формате\r\n * @param {Object} params - Параметры отрисовки\r\n * @param {Object} params.padding - Отступы\r\n * @param {number} params.xStep - Шаг по оси X\r\n * @param {number[]} params.xValues - Значения оси X\r\n * @param {number} params.maxY - Максимальное значение Y\r\n * @param {number} params.graphHeight - Высота области графика\r\n * @param {number} params.height - Высота холста\r\n * @param {number} params.pointRadius - Радиус точек (по умолчанию 6)\r\n */\r\nfunction drawLine(ctx, data, color, params) {\r\n    const { padding, xStep, xValues, maxY, graphHeight, height, pointRadius = 6 } = params;\r\n\r\n    ctx.beginPath();\r\n    ctx.strokeStyle = color;\r\n    ctx.lineWidth = 3;\r\n\r\n    for (let i = 0; i < data.length; i++) {\r\n        // Находим соответствующий индекс в xValues\r\n        const xIndex = xValues.indexOf(data[i].N);\r\n        const x = padding.left + (xIndex * xStep);\r\n        const y = height - padding.bottom - (data[i].time / maxY * graphHeight);\r\n\r\n        if (i === 0) {\r\n            ctx.moveTo(x, y);\r\n        } else {\r\n            ctx.lineTo(x, y);\r\n        }\r\n    }\r\n    ctx.stroke();\r\n\r\n    // Рисуем точки\r\n    ctx.fillStyle = color;\r\n    for (let i = 0; i < data.length; i++) {\r\n        const xIndex = xValues.indexOf(data[i].N);\r\n        const x = padding.left + (xIndex * xStep);\r\n        const y = height - padding.bottom - (data[i].time / maxY * graphHeight);\r\n\r\n        ctx.beginPath();\r\n        ctx.arc(x, y, pointRadius, 0, 2 * Math.PI);\r\n        ctx.fill();\r\n    }\r\n}\r\n\r\n/**\r\n * Рисует легенду графика\r\n *\r\n * @param {CanvasRenderingContext2D} ctx - Контекст рисования\r\n * @param {Array<{color: string, text: string}>} items - Элементы легенды\r\n * @param {number} startX - Начальная координата X\r\n * @param {number} startY - Начальная координата Y\r\n */\r\nfunction drawLegend(ctx, items, startX, startY) {\r\n    let legendY = startY;\r\n    ctx.font = '14px Arial';\r\n    ctx.textAlign = 'left';\r\n\r\n    for (const item of items) {\r\n        ctx.fillStyle = item.color;\r\n        ctx.fillRect(startX, legendY - 8, 20, 12);\r\n        ctx.fillStyle = '#333333';\r\n        ctx.fillText(item.text, startX + 30, legendY);\r\n        legendY += 25;\r\n    }\r\n}\r\n\r\n// Параметры графиков\r\nconst width = 1200;\r\nconst height = 800;\r\nconst padding = { left: 100, right: 50, top: 50, bottom: 80 };\r\nconst graphHeight = height - padding.top - padding.bottom;\r\nconst graphWidth = width - padding.left - padding.right;\r\nconst xStep = graphWidth / (arr.length - 1);\r\n\r\n// Максимальное значение для масштабирования\r\nconst maxY = Math.max(...allPoints.map(p => p.time)) * 1.1;\r\n\r\n// ========== ПЕРВЫЙ ГРАФИК (основное задание) ==========\r\n/**\r\n * График 1: Все точки замеров с выделением минимумов, максимумов и средних значений\r\n * Показывает разброс результатов и основные статистические характеристики\r\n */\r\nconst { canvas: canvas1, ctx: ctx1 } = setupCanvas(width, height, 'Сортировка вставками - все точки замеров');\r\n\r\n// Рисуем оси\r\ndrawAxes(ctx1, padding, width, height, arr, maxY);\r\n\r\n// Рисуем ВСЕ ТОЧКИ (полупрозрачные)\r\nctx1.fillStyle = '#999999';\r\nctx1.globalAlpha = 0.3;\r\nfor (const point of allPoints) {\r\n    const xIndex = arr.indexOf(point.N);\r\n    const x = padding.left + (xIndex * xStep);\r\n    const y = height - padding.bottom - (point.time / maxY * graphHeight);\r\n\r\n    ctx1.beginPath();\r\n    ctx1.arc(x, y, 3, 0, 2 * Math.PI);\r\n    ctx1.fill();\r\n}\r\nctx1.globalAlpha = 1.0;\r\n\r\n// Рисуем три кривые\r\nconst lineParams = { padding, xStep, xValues: arr, maxY, graphHeight, height };\r\ndrawLine(ctx1, minData, '#28a72e', lineParams);\r\ndrawLine(ctx1, maxData, '#4d1016', lineParams);\r\ndrawLine(ctx1, avgData, '#ee59ee', lineParams);\r\n\r\n// Легенда для первого графика\r\nconst legendItems1 = [\r\n    { color: '#28a72e', text: 'Лучший случай (минимумы)' },\r\n    { color: '#4d1016', text: 'Худший случай (максимумы)' },\r\n    { color: '#ee59ee', text: 'Средний случай' },\r\n    { color: '#999999', text: 'Все точки замеров (20 для каждого N)' }\r\n];\r\ndrawLegend(ctx1, legendItems1, padding.left + 10, padding.top + 20);\r\n\r\n// Сохраняем первый график\r\nconst buffer1 = canvas1.toBuffer('image/png');\r\nfs.writeFileSync('chart_all_points.png', buffer1);\r\nconsole.log('Первый график сохранен: chart_all_points.png');\r\n\r\n// ========== ВТОРОЙ ГРАФИК (дополнительное задание) ==========\r\n/**\r\n * График 2: Сравнение худшего случая с теоретической кривой O(n²)\r\n * Демонстрирует соответствие алгоритма теоретической сложности\r\n */\r\nconst { canvas: canvas2, ctx: ctx2 } = setupCanvas(width, height, 'Сравнение худшего случая с O(n²)');\r\n\r\n// Рисуем оси\r\ndrawAxes(ctx2, padding, width, height, arr, maxY);\r\n\r\n// Рисуем кривые\r\ndrawLine(ctx2, maxData, '#dc3545', lineParams);\r\ndrawLine(ctx2, theoreticalData, '#45ff07', lineParams);\r\n\r\n// Легенда для второго графика\r\nconst legendItems2 = [\r\n    { color: '#dc3545', text: 'Худший случай (фактические замеры)' },\r\n    { color: '#45ff07', text: `O(n²) с C = ${C.toExponential(3)}` }\r\n];\r\ndrawLegend(ctx2, legendItems2, padding.left + 10, padding.top + 20);\r\n\r\n// Сохраняем второй график\r\nconst buffer2 = canvas2.toBuffer('image/png');\r\nfs.writeFileSync('chart_worst_vs_obig.png', buffer2);\r\nconsole.log('Второй график сохранен: chart_worst_vs_obig.png');\r\n\r\n/**\r\n * Сортировка вставками (Insertion Sort)\r\n *\r\n * Классический алгоритм сортировки, который строит отсортированный массив\r\n * путем последовательной вставки элементов в правильную позицию.\r\n * Сложность: O(n²) в худшем и среднем случае, O(n) в лучшем случае.\r\n *\r\n * @param {number[]} a - Массив чисел для сортировки (будет изменен)\r\n * @returns {number[]} Отсортированный массив (для удобства цепочек вызовов)\r\n *\r\n * @example\r\n * const arr = [5, 2, 4, 1, 3];\r\n * insertionSort(arr);\r\n * console.log(arr); // [1, 2, 3, 4, 5]\r\n */\r\nfunction insertionSort(a) {\r\n    /**\r\n     * Длина массива\r\n     * @type {number}\r\n     */\r\n    const n = a.length;\r\n\r\n    // Начинаем со второго элемента (индекс 1)\r\n    for (let i = 1; i < n; i++) {\r\n        /**\r\n         * Индекс элемента, с которым сравниваем текущий\r\n         * Двигаемся слева направо, вставляя текущий элемент\r\n         * в правильную позицию среди уже отсортированных\r\n         */\r\n        let j = i - 1;\r\n\r\n        /**\r\n         * Пока не дошли до начала массива и\r\n         * текущий элемент меньше предыдущего,\r\n         * меняем их местами и двигаемся дальше влево\r\n         */\r\n        while (j >= 0 && a[j] > a[j + 1]) {\r\n            // Меняем элементы местами (деструктуризация)\r\n            [a[j], a[j + 1]] = [a[j + 1], a[j]];\r\n            j--;\r\n        }\r\n    }\r\n    return a;\r\n}\r\n\r\nconsole.log('\\n=== Итог работы программы ===');\r\nconsole.log('results.csv - все результаты замеров');\r\nconsole.log('chart_all_points.png - все точки (20 замеров для каждого N)');\r\nconsole.log('chart_worst_vs_obig.png - сравнение худшего случая с O(n²)');
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/lab/lab_1/sort.js b/lab/lab_1/sort.js
+--- a/lab/lab_1/sort.js	(revision 0cebf3ef5961f8b2e4f12b744c3418904dcd6cdc)
++++ b/lab/lab_1/sort.js	(date 1772478138585)
+@@ -15,7 +15,7 @@
+  * Массив размеров тестируемых массивов.
+  * @constant {number[]}
+  */
+-const arr = [1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000];
++const arr = [1000, 2000];
+ 
+ /**
+  * Объект для хранения результатов замеров по каждому размеру N.
+@@ -429,4 +429,4 @@
+ console.log('\n=== Итог работы программы ===');
+ console.log('results.csv - все результаты замеров');
+ console.log('chart_all_points.png - все точки (20 замеров для каждого N)');
+-console.log('chart_worst_vs_obig.png - сравнение худшего случая с O(n²)');
+\ No newline at end of file
++console.log('chart_worst_vs_obig.png - сравнение худшего случая с O(n²)');
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"2d8ac661-b8df-4465-9e9d-06f23e95d5f2\" name=\"Changes\" comment=\"\">\r\n      <change beforePath=\"$PROJECT_DIR$/lab/.idea/lab1.iml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/lab/.idea/lab1.iml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/lab/lab_1/chart_all_points.png\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/lab/lab_1/chart_all_points.png\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/lab/lab_1/chart_worst_vs_obig.png\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/lab/lab_1/chart_worst_vs_obig.png\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/lab/lab_1/results.csv\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/lab/lab_1/results.csv\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/lab/lab_1/sort.js\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/lab/lab_1/sort.js\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"JavaScript File\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"ProjectColorInfo\"><![CDATA[{\r\n  \"associatedIndex\": 6\r\n}]]></component>\r\n  <component name=\"ProjectId\" id=\"3ALYG41QLmmdm2LhJJuMukcJbLN\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\"><![CDATA[{\r\n  \"keyToString\": {\r\n    \"ModuleVcsDetector.initialDetectionPerformed\": \"true\",\r\n    \"Node.js.sort.js.executor\": \"Run\",\r\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\r\n    \"RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252\": \"true\",\r\n    \"RunOnceActivity.git.unshallow\": \"true\",\r\n    \"com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1\": \"true\",\r\n    \"dart.analysis.tool.window.visible\": \"false\",\r\n    \"git-widget-placeholder\": \"master\",\r\n    \"ignore.virus.scanning.warn.message\": \"true\",\r\n    \"junie.onboarding.icon.badge.shown\": \"true\",\r\n    \"last_opened_file_path\": \"C:/Users/Admin/Desktop/KS30_PavluchenkovaOS_Algoritms\",\r\n    \"node.js.detected.package.eslint\": \"true\",\r\n    \"node.js.detected.package.tslint\": \"true\",\r\n    \"node.js.selected.package.eslint\": \"(autodetect)\",\r\n    \"node.js.selected.package.tslint\": \"(autodetect)\",\r\n    \"nodejs_package_manager_path\": \"npm\",\r\n    \"to.speed.mode.migration.done\": \"true\",\r\n    \"vue.rearranger.settings.migration\": \"true\"\r\n  }\r\n}]]></component>\r\n  <component name=\"RecentsManager\">\r\n    <key name=\"MoveFile.RECENT_KEYS\">\r\n      <recent name=\"C:\\Users\\Admin\\Desktop\\KS30_PavluchenkovaOS_Algoritms\\lab\" />\r\n    </key>\r\n  </component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-js-predefined-d6986cc7102b-a71380e98a7c-JavaScript-WS-252.28238.10\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"2d8ac661-b8df-4465-9e9d-06f23e95d5f2\" name=\"Changes\" comment=\"\" />\r\n      <created>1772373218660</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1772373218660</updated>\r\n      <workItem from=\"1772373219943\" duration=\"7698000\" />\r\n    </task>\r\n    <servers />\r\n  </component>\r\n  <component name=\"TypeScriptGeneratedFilesManager\">\r\n    <option name=\"version\" value=\"3\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 0cebf3ef5961f8b2e4f12b744c3418904dcd6cdc)
++++ b/.idea/workspace.xml	(date 1773822229823)
+@@ -5,11 +5,13 @@
+   </component>
+   <component name="ChangeListManager">
+     <list default="true" id="2d8ac661-b8df-4465-9e9d-06f23e95d5f2" name="Changes" comment="">
+-      <change beforePath="$PROJECT_DIR$/lab/.idea/lab1.iml" beforeDir="false" afterPath="$PROJECT_DIR$/lab/.idea/lab1.iml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/lab/lab_3/index.js" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/lab/lab_1/chart_all_points.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_1/chart_all_points.png" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/lab/lab_1/chart_worst_vs_obig.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_1/chart_worst_vs_obig.png" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/lab/lab_1/results.csv" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_1/results.csv" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/lab/lab_1/sort.js" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_1/sort.js" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/lab/lab_2/sort.js" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_2/sort.js" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -26,36 +28,42 @@
+   <component name="Git.Settings">
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+   </component>
+-  <component name="ProjectColorInfo"><![CDATA[{
+-  "associatedIndex": 6
+-}]]></component>
++  <component name="ProjectColorInfo">{
++  &quot;associatedIndex&quot;: 6
++}</component>
+   <component name="ProjectId" id="3ALYG41QLmmdm2LhJJuMukcJbLN" />
+   <component name="ProjectViewState">
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent"><![CDATA[{
+-  "keyToString": {
+-    "ModuleVcsDetector.initialDetectionPerformed": "true",
+-    "Node.js.sort.js.executor": "Run",
+-    "RunOnceActivity.ShowReadmeOnStart": "true",
+-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+-    "RunOnceActivity.git.unshallow": "true",
+-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+-    "dart.analysis.tool.window.visible": "false",
+-    "git-widget-placeholder": "master",
+-    "ignore.virus.scanning.warn.message": "true",
+-    "junie.onboarding.icon.badge.shown": "true",
+-    "last_opened_file_path": "C:/Users/Admin/Desktop/KS30_PavluchenkovaOS_Algoritms",
+-    "node.js.detected.package.eslint": "true",
+-    "node.js.detected.package.tslint": "true",
+-    "node.js.selected.package.eslint": "(autodetect)",
+-    "node.js.selected.package.tslint": "(autodetect)",
+-    "nodejs_package_manager_path": "npm",
+-    "to.speed.mode.migration.done": "true",
+-    "vue.rearranger.settings.migration": "true"
++  <component name="PropertiesComponent">{
++  &quot;keyToString&quot;: {
++    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
++    &quot;Node.js.Sorted_array.js.executor&quot;: &quot;Run&quot;,
++    &quot;Node.js.all_sort.js.executor&quot;: &quot;Run&quot;,
++    &quot;Node.js.antiQsort.js.executor&quot;: &quot;Run&quot;,
++    &quot;Node.js.deterministicWorstCase.js.executor&quot;: &quot;Run&quot;,
++    &quot;Node.js.same_elements.js.executor&quot;: &quot;Run&quot;,
++    &quot;Node.js.script.js.executor&quot;: &quot;Run&quot;,
++    &quot;Node.js.sort.js.executor&quot;: &quot;Run&quot;,
++    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
++    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
++    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
++    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
++    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
++    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
++    &quot;last_opened_file_path&quot;: &quot;C:/Users/Admin/Desktop/KS30_PavluchenkovaOS_Algoritms&quot;,
++    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
++    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
++    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
++    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
++    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
++    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
++    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+   }
+-}]]></component>
++}</component>
+   <component name="RecentsManager">
+     <key name="MoveFile.RECENT_KEYS">
+       <recent name="C:\Users\Admin\Desktop\KS30_PavluchenkovaOS_Algoritms\lab" />
+@@ -75,11 +83,31 @@
+       <option name="number" value="Default" />
+       <option name="presentableId" value="Default" />
+       <updated>1772373218660</updated>
+-      <workItem from="1772373219943" duration="7698000" />
++      <workItem from="1772373219943" duration="9267000" />
++      <workItem from="1772445709430" duration="2419000" />
++      <workItem from="1772700065339" duration="842000" />
++      <workItem from="1773317840311" duration="8890000" />
++      <workItem from="1773410431144" duration="32502000" />
++      <workItem from="1773508098650" duration="11000" />
++      <workItem from="1773571752414" duration="798000" />
++      <workItem from="1773576735559" duration="3118000" />
++      <workItem from="1773671180336" duration="1000" />
++      <workItem from="1773821847872" duration="378000" />
+     </task>
+     <servers />
+   </component>
+   <component name="TypeScriptGeneratedFilesManager">
+     <option name="version" value="3" />
+   </component>
++  <component name="Vcs.Log.Tabs.Properties">
++    <option name="TAB_STATES">
++      <map>
++        <entry key="MAIN">
++          <value>
++            <State />
++          </value>
++        </entry>
++      </map>
++    </option>
++  </component>
+ </project>
+\ No newline at end of file
+Index: lab/lab_2/sort.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>const fs = require('fs');\r\nconst { createCanvas } = require('canvas');\r\n\r\n// ==============================================\r\n// КОНСТАНТЫ\r\n// ==============================================\r\nconst M = 10; // Порог для переключения на сортировку вставками\r\n\r\n// ==============================================\r\n// ЧАСТЬ 1 - СЛУЧАЙНЫЙ МАССИВ\r\n// ==============================================\r\n\r\n/*** Массив размеров тестируемых массивов.*/\r\nconst arr1 = [1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000];\r\n\r\n// Счётчики для части 1\r\nlet quickSort1Calls = 0;\r\nlet quickSort1MaxDepth = 0;\r\nlet quickSort1CurrentDepth = 0;\r\nlet quickSort1Swaps = 0; // Счетчик обменов\r\n\r\n/**\r\n * Быстрая сортировка (сортировка Хоара)\r\n */\r\nfunction quickSort1(a, l, r) {\r\n    quickSort1Calls++;\r\n    quickSort1CurrentDepth++;\r\n    if (quickSort1CurrentDepth > quickSort1MaxDepth) {\r\n        quickSort1MaxDepth = quickSort1CurrentDepth;\r\n    }\r\n\r\n    if (l < r) {\r\n        const q = partition1(a, l, r);\r\n        quickSort1(a, l, q);\r\n        quickSort1(a, q + 1, r);\r\n    }\r\n\r\n    quickSort1CurrentDepth--;\r\n    return a;\r\n}\r\n\r\n/**\r\n * Разделение массива относительно опорного элемента\r\n */\r\nfunction partition1(a, l, r) {\r\n    const v = a[Math.floor((l + r) / 2)];\r\n    let i = l;\r\n    let j = r;\r\n\r\n    while (i <= j) {\r\n        while (a[i] < v) i++;\r\n        while (a[j] > v) j--;\r\n\r\n        if (i >= j) break;\r\n\r\n        [a[i], a[j]] = [a[j], a[i]];\r\n        quickSort1Swaps++; // Увеличиваем счетчик обменов\r\n        i++;\r\n        j--;\r\n    }\r\n    return j;\r\n}\r\n\r\n/** Объект для хранения результатов замеров по каждому размеру N. */\r\nconst results1 = {\r\n    time: {},\r\n    depth: {},\r\n    swaps: {},\r\n    calls: {}\r\n};\r\n\r\n// Инициализация массивов результатов для каждого N\r\nfor (const N of arr1) {\r\n    results1.time[N] = [];\r\n    results1.depth[N] = [];\r\n    results1.swaps[N] = [];\r\n    results1.calls[N] = [];\r\n}\r\n\r\nconsole.log('ЧАСТЬ 1: Тесты для всех значений N из списка:', arr1.join(', '), '\\n');\r\n\r\n// Основной цикл тестирования\r\nfor (const N of arr1) {\r\n    console.log(`=== Тест для N = ${N} ===`);\r\n\r\n    for (let test = 1; test <= 20; test++) {\r\n        const vectorToSort = [];\r\n        for (let i = 0; i < N; i++) {\r\n            vectorToSort[i] = Math.random() * 2 - 1;\r\n        }\r\n\r\n        // Сброс счётчиков перед тестом\r\n        quickSort1Calls = 0;\r\n        quickSort1MaxDepth = 0;\r\n        quickSort1CurrentDepth = 0;\r\n        quickSort1Swaps = 0;\r\n\r\n        const start = performance.now();\r\n        quickSort1(vectorToSort, 0, vectorToSort.length - 1);\r\n        const end = performance.now();\r\n\r\n        const timeMs = end - start;\r\n        const timeSec = timeMs / 1000;\r\n\r\n        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort1Calls}, глубина=${quickSort1MaxDepth}, обменов=${quickSort1Swaps}`);\r\n\r\n        // Сохраняем все метрики\r\n        results1.time[N].push(timeMs);\r\n        results1.depth[N].push(quickSort1MaxDepth);\r\n        results1.swaps[N].push(quickSort1Swaps);\r\n        results1.calls[N].push(quickSort1Calls);\r\n    }\r\n    console.log('');\r\n}\r\n\r\n/** Сохраняем все результаты в CSV файл.*/\r\nlet csvContent1 = 'N,Test,Time_ms,Depth,Swaps,Calls\\n';\r\nfor (const N of arr1) {\r\n    for (let i = 0; i < results1.time[N].length; i++) {\r\n        csvContent1 += `${N},${i + 1},${results1.time[N][i].toFixed(3)},${results1.depth[N][i]},${results1.swaps[N][i]},${results1.calls[N][i]}\\n`;\r\n    }\r\n}\r\nfs.writeFileSync('results_complete.csv', csvContent1);\r\nconsole.log('Результаты сохранены в results_complete.csv\\n');\r\n\r\n// Выводим статистику\r\nconsole.log('\\nN\\tМинимальное\\tМаксимальное\\tСреднее (время)');\r\nconsole.log('-'.repeat(60));\r\n\r\nfor (const N of arr1) {\r\n    const times = results1.time[N];\r\n    const min = Math.min(...times);\r\n    const max = Math.max(...times);\r\n    const avg = times.reduce((a, b) => a + b, 0) / times.length;\r\n    console.log(`${N}\\t${min.toFixed(3)} мс\\t\\t${max.toFixed(3)} мс\\t\\t${avg.toFixed(3)} мс`);\r\n}\r\n\r\n// ==============================================\r\n// ФУНКЦИИ ДЛЯ ПОСТРОЕНИЯ ГРАФИКОВ\r\n// ==============================================\r\n\r\nfunction setupCanvas(width, height, title) {\r\n    const canvas = createCanvas(width, height);\r\n    const ctx = canvas.getContext('2d');\r\n\r\n    ctx.fillStyle = '#ffffff';\r\n    ctx.fillRect(0, 0, width, height);\r\n\r\n    ctx.font = 'bold 20px Arial';\r\n    ctx.fillStyle = '#000000';\r\n    ctx.textAlign = 'center';\r\n    ctx.fillText(title, width / 2, 40);\r\n\r\n    return { canvas, ctx };\r\n}\r\n\r\nfunction drawAxes(ctx, padding, width, height, xValues, maxY, yLabel) {\r\n    const graphWidth = width - padding.left - padding.right;\r\n    const graphHeight = height - padding.top - padding.bottom;\r\n    const xStep = graphWidth / (xValues.length - 1);\r\n\r\n    ctx.strokeStyle = '#000000';\r\n    ctx.lineWidth = 2;\r\n    ctx.beginPath();\r\n    ctx.moveTo(padding.left, padding.top);\r\n    ctx.lineTo(padding.left, height - padding.bottom);\r\n    ctx.lineTo(width - padding.right, height - padding.bottom);\r\n    ctx.stroke();\r\n\r\n    ctx.font = '14px Arial';\r\n    ctx.fillStyle = '#000000';\r\n    ctx.textAlign = 'center';\r\n    ctx.fillText('Размер массива (N)', width / 2, height - 20);\r\n\r\n    ctx.save();\r\n    ctx.translate(25, height / 2);\r\n    ctx.rotate(-Math.PI / 2);\r\n    ctx.fillText(yLabel, 0, 0);\r\n    ctx.restore();\r\n\r\n    for (let i = 0; i < xValues.length; i++) {\r\n        const x = padding.left + (i * xStep);\r\n        const N = xValues[i];\r\n\r\n        ctx.beginPath();\r\n        ctx.moveTo(x, height - padding.bottom);\r\n        ctx.lineTo(x, height - padding.bottom + 8);\r\n        ctx.stroke();\r\n\r\n        ctx.font = '10px Arial';\r\n        ctx.fillStyle = '#666666';\r\n        ctx.textAlign = 'center';\r\n        ctx.fillText(N.toString(), x, height - padding.bottom + 20);\r\n    }\r\n\r\n    const yStep = graphHeight / 5;\r\n    for (let i = 0; i <= 5; i++) {\r\n        const y = height - padding.bottom - (i * yStep);\r\n        const value = (i * maxY / 5).toFixed(1);\r\n\r\n        ctx.beginPath();\r\n        ctx.moveTo(padding.left - 8, y);\r\n        ctx.lineTo(padding.left, y);\r\n        ctx.stroke();\r\n\r\n        ctx.font = '10px Arial';\r\n        ctx.fillStyle = '#666666';\r\n        ctx.textAlign = 'right';\r\n        ctx.fillText(value, padding.left - 12, y + 4);\r\n    }\r\n\r\n    return { graphWidth, graphHeight, xStep };\r\n}\r\n\r\nfunction drawLine(ctx, data, color, params) {\r\n    const { padding, xStep, xValues, maxY, graphHeight, height } = params;\r\n\r\n    ctx.beginPath();\r\n    ctx.strokeStyle = color;\r\n    ctx.lineWidth = 2;\r\n\r\n    for (let i = 0; i < data.length; i++) {\r\n        const xIndex = xValues.indexOf(data[i].N);\r\n        if (xIndex === -1) continue;\r\n\r\n        const x = padding.left + (xIndex * xStep);\r\n        const y = height - padding.bottom - (data[i].value / maxY * graphHeight);\r\n\r\n        if (i === 0) {\r\n            ctx.moveTo(x, y);\r\n        } else {\r\n            ctx.lineTo(x, y);\r\n        }\r\n    }\r\n    ctx.stroke();\r\n\r\n    ctx.fillStyle = color;\r\n    for (let i = 0; i < data.length; i++) {\r\n        const xIndex = xValues.indexOf(data[i].N);\r\n        if (xIndex === -1) continue;\r\n\r\n        const x = padding.left + (xIndex * xStep);\r\n        const y = height - padding.bottom - (data[i].value / maxY * graphHeight);\r\n\r\n        ctx.beginPath();\r\n        ctx.arc(x, y, 5, 0, 2 * Math.PI);\r\n        ctx.fill();\r\n    }\r\n}\r\n\r\nfunction drawLegend(ctx, items, x, y) {\r\n    ctx.font = '12px Arial';\r\n    ctx.textAlign = 'left';\r\n\r\n    items.forEach((item, index) => {\r\n        const legendY = y + index * 25;\r\n\r\n        ctx.fillStyle = item.color;\r\n        ctx.fillRect(x, legendY - 8, 20, 12);\r\n\r\n        ctx.fillStyle = '#333333';\r\n        ctx.fillText(item.text, x + 30, legendY);\r\n    });\r\n}\r\n\r\n// ==============================================\r\n// ГРАФИК 1: Время выполнения (мин, макс, среднее)\r\n// ==============================================\r\n\r\nfunction createTimeChart() {\r\n    const minData = [];\r\n    const maxData = [];\r\n    const avgData = [];\r\n\r\n    for (const N of arr1) {\r\n        const times = results1.time[N];\r\n        minData.push({ N, value: Math.min(...times) });\r\n        maxData.push({ N, value: Math.max(...times) });\r\n        avgData.push({ N, value: times.reduce((a, b) => a + b, 0) / times.length });\r\n    }\r\n\r\n    const width = 1000;\r\n    const height = 600;\r\n    const padding = { left: 80, right: 50, top: 60, bottom: 60 };\r\n    const maxY = Math.max(...maxData.map(d => d.value)) * 1.1;\r\n\r\n    const { canvas, ctx } = setupCanvas(width, height, 'Совмещенный график времени выполнения');\r\n\r\n    const axisParams = drawAxes(ctx, padding, width, height, arr1, maxY, 'Время (мс)');\r\n    const lineParams = { ...axisParams, padding, xValues: arr1, maxY, height };\r\n\r\n    drawLine(ctx, minData, '#4CAF50', lineParams);\r\n    drawLine(ctx, maxData, '#F44336', lineParams);\r\n    drawLine(ctx, avgData, '#2196F3', lineParams);\r\n\r\n    drawLegend(ctx, [\r\n        { color: '#4CAF50', text: 'Наилучшее время' },\r\n        { color: '#F44336', text: 'Наихудшее время' },\r\n        { color: '#2196F3', text: 'Среднее время' }\r\n    ], padding.left + 20, padding.top + 30);\r\n\r\n    const buffer = canvas.toBuffer('image/png');\r\n    fs.writeFileSync('chart1_time.png', buffer);\r\n    console.log('✅ График 1 сохранен: chart1_time.png');\r\n}\r\n\r\n// ==============================================\r\n// ГРАФИК 2: Глубина рекурсии (мин, макс, среднее)\r\n// ==============================================\r\n\r\nfunction createDepthChart() {\r\n    const minData = [];\r\n    const maxData = [];\r\n    const avgData = [];\r\n\r\n    for (const N of arr1) {\r\n        const depths = results1.depth[N];\r\n        minData.push({ N, value: Math.min(...depths) });\r\n        maxData.push({ N, value: Math.max(...depths) });\r\n        avgData.push({ N, value: depths.reduce((a, b) => a + b, 0) / depths.length });\r\n    }\r\n\r\n    const width = 1000;\r\n    const height = 600;\r\n    const padding = { left: 80, right: 50, top: 60, bottom: 60 };\r\n    const maxY = Math.max(...maxData.map(d => d.value)) * 1.1;\r\n\r\n    const { canvas, ctx } = setupCanvas(width, height, 'Совмещенный график глубины рекурсии');\r\n\r\n    const axisParams = drawAxes(ctx, padding, width, height, arr1, maxY, 'Глубина рекурсии');\r\n    const lineParams = { ...axisParams, padding, xValues: arr1, maxY, height };\r\n\r\n    drawLine(ctx, minData, '#4CAF50', lineParams);\r\n    drawLine(ctx, maxData, '#F44336', lineParams);\r\n    drawLine(ctx, avgData, '#2196F3', lineParams);\r\n\r\n    drawLegend(ctx, [\r\n        { color: '#4CAF50', text: 'Наилучшая глубина' },\r\n        { color: '#F44336', text: 'Наихудшая глубина' },\r\n        { color: '#2196F3', text: 'Средняя глубина' }\r\n    ], padding.left + 20, padding.top + 30);\r\n\r\n    const buffer = canvas.toBuffer('image/png');\r\n    fs.writeFileSync('chart2_depth.png', buffer);\r\n    console.log('✅ График 2 сохранен: chart2_depth.png');\r\n}\r\n\r\n// ==============================================\r\n// ГРАФИК 3: Количество обменов (мин, макс, среднее)\r\n// ==============================================\r\n\r\nfunction createSwapsChart() {\r\n    const minData = [];\r\n    const maxData = [];\r\n    const avgData = [];\r\n\r\n    for (const N of arr1) {\r\n        const swaps = results1.swaps[N];\r\n        minData.push({ N, value: Math.min(...swaps) });\r\n        maxData.push({ N, value: Math.max(...swaps) });\r\n        avgData.push({ N, value: swaps.reduce((a, b) => a + b, 0) / swaps.length });\r\n    }\r\n\r\n    const width = 1000;\r\n    const height = 600;\r\n    const padding = { left: 80, right: 50, top: 60, bottom: 60 };\r\n    const maxY = Math.max(...maxData.map(d => d.value)) * 1.1;\r\n\r\n    const { canvas, ctx } = setupCanvas(width, height, 'Совмещенный график количества обменов');\r\n\r\n    const axisParams = drawAxes(ctx, padding, width, height, arr1, maxY, 'Количество обменов');\r\n    const lineParams = { ...axisParams, padding, xValues: arr1, maxY, height };\r\n\r\n    drawLine(ctx, minData, '#4CAF50', lineParams);\r\n    drawLine(ctx, maxData, '#F44336', lineParams);\r\n    drawLine(ctx, avgData, '#2196F3', lineParams);\r\n\r\n    drawLegend(ctx, [\r\n        { color: '#4CAF50', text: 'Наименьшее количество обменов' },\r\n        { color: '#F44336', text: 'Наибольшее количество обменов' },\r\n        { color: '#2196F3', text: 'Среднее количество обменов' }\r\n    ], padding.left + 20, padding.top + 30);\r\n\r\n    const buffer = canvas.toBuffer('image/png');\r\n    fs.writeFileSync('chart3_swaps.png', buffer);\r\n    console.log('✅ График 3 сохранен: chart3_swaps.png');\r\n}\r\n\r\n// ==============================================\r\n// ГРАФИК 4: Количество вызовов (мин, макс, среднее)\r\n// ==============================================\r\n\r\nfunction createCallsChart() {\r\n    const minData = [];\r\n    const maxData = [];\r\n    const avgData = [];\r\n\r\n    for (const N of arr1) {\r\n        const calls = results1.calls[N];\r\n        minData.push({ N, value: Math.min(...calls) });\r\n        maxData.push({ N, value: Math.max(...calls) });\r\n        avgData.push({ N, value: calls.reduce((a, b) => a + b, 0) / calls.length });\r\n    }\r\n\r\n    const width = 1000;\r\n    const height = 600;\r\n    const padding = { left: 80, right: 50, top: 60, bottom: 60 };\r\n    const maxY = Math.max(...maxData.map(d => d.value)) * 1.1;\r\n\r\n    const { canvas, ctx } = setupCanvas(width, height, 'Совмещенный график количества вызовов рекурсивной функции');\r\n\r\n    const axisParams = drawAxes(ctx, padding, width, height, arr1, maxY, 'Количество вызовов');\r\n    const lineParams = { ...axisParams, padding, xValues: arr1, maxY, height };\r\n\r\n    drawLine(ctx, minData, '#4CAF50', lineParams);\r\n    drawLine(ctx, maxData, '#F44336', lineParams);\r\n    drawLine(ctx, avgData, '#2196F3', lineParams);\r\n\r\n    drawLegend(ctx, [\r\n        { color: '#4CAF50', text: 'Наименьшее количество вызовов' },\r\n        { color: '#F44336', text: 'Наибольшее количество вызовов' },\r\n        { color: '#2196F3', text: 'Среднее количество вызовов' }\r\n    ], padding.left + 20, padding.top + 30);\r\n\r\n    const buffer = canvas.toBuffer('image/png');\r\n    fs.writeFileSync('chart4_calls.png', buffer);\r\n    console.log('✅ График 4 сохранен: chart4_calls.png');\r\n}\r\n\r\n// Создаем все 4 графика\r\nconsole.log('\\n' + '='.repeat(50));\r\nconsole.log('\uD83D\uDCCA СОЗДАНИЕ ГРАФИКОВ ДЛЯ ЧАСТИ 1');\r\nconsole.log('='.repeat(50));\r\n\r\ncreateTimeChart();\r\ncreateDepthChart();\r\ncreateSwapsChart();\r\ncreateCallsChart();\r\n\r\n// ==============================================\r\n// ВЫВОД МАКСИМАЛЬНОГО ВРЕМЕНИ ДЛЯ КАЖДОГО РАЗМЕРА\r\n// ==============================================\r\n\r\nconsole.log('\\n' + '='.repeat(50));\r\nconsole.log('\uD83D\uDCCA МАКСИМАЛЬНОЕ ВРЕМЯ СОРТИРОВКИ ПО РАЗМЕРАМ');\r\nconsole.log('='.repeat(50));\r\n\r\nconst maxTimes1 = [];\r\nfor (const N of arr1) {\r\n    const maxTime = Math.max(...results1.time[N]);\r\n    maxTimes1.push(maxTime);\r\n    console.log(`N = ${N}: ${maxTime.toFixed(3)} мс`);\r\n}\r\n\r\nlet maxCsvContent1 = 'N,MaxTime_ms\\n';\r\nfor (let i = 0; i < arr1.length; i++) {\r\n    maxCsvContent1 += `${arr1[i]},${maxTimes1[i].toFixed(3)}\\n`;\r\n}\r\nfs.writeFileSync('max_times.csv', maxCsvContent1);\r\nconsole.log('\\n✅ Максимальное время сохранено в max_times.csv');\r\n\r\n// Дополнительно: находим константу C для O(n log n) по максимальным значениям\r\nconsole.log('\\n\uD83D\uDCC8 Анализ сложности O(n log n):');\r\nlet C1 = 0;\r\nfor (let i = 0; i < arr1.length; i++) {\r\n    if (arr1[i] >= 16000) {\r\n        const ratio = maxTimes1[i] / (arr1[i] * Math.log2(arr1[i]));\r\n        if (ratio > C1) C1 = ratio;\r\n        console.log(`N=${arr1[i]}, отношение = ${ratio.toExponential(4)}`);\r\n    }\r\n}\r\nC1 = C1 * 1.2;\r\nconsole.log(`\\nКонстанта C для O(n log n): ${C1.toExponential(4)}`);\r\n\r\n// ==============================================\r\n// ВТОРОЙ ГРАФИК: Наихудшее время vs O(n log n)\r\n// ==============================================\r\n\r\nconsole.log('\\n' + '='.repeat(50));\r\nconsole.log('\uD83D\uDCCA ПОСТРОЕНИЕ ГРАФИКА СЛОЖНОСТИ O(n log n)');\r\nconsole.log('='.repeat(50));\r\n\r\nconst worstTimes1 = [];\r\nfor (const N of arr1) {\r\n    const maxTime = Math.max(...results1.time[N]);\r\n    worstTimes1.push(maxTime);\r\n}\r\n\r\nlet C_theory1 = 0;\r\nfor (let i = 0; i < arr1.length; i++) {\r\n    if (arr1[i] >= 16000) {\r\n        const ratio = worstTimes1[i] / (arr1[i] * Math.log2(arr1[i]));\r\n        if (ratio > C_theory1) C_theory1 = ratio;\r\n        console.log(`N=${arr1[i]}, отношение = ${ratio.toExponential(4)}`);\r\n    }\r\n}\r\nC_theory1 = C_theory1 * 1.4;\r\nconsole.log(`\\nПодобрана константа C_theory = ${C_theory1.toExponential(4)}`);\r\n\r\nconst theoreticalData1 = [];\r\nfor (let i = 0; i < arr1.length; i++) {\r\n    theoreticalData1.push({\r\n        N: arr1[i],\r\n        time: C_theory1 * arr1[i] * Math.log2(arr1[i])\r\n    });\r\n}\r\n\r\nconst worstData1 = [];\r\nfor (let i = 0; i < arr1.length; i++) {\r\n    worstData1.push({ N: arr1[i], time: worstTimes1[i] });\r\n}\r\n\r\nconst width = 1000;\r\nconst height = 600;\r\nconst padding = { left: 80, right: 50, top: 60, bottom: 60 };\r\nconst allYValues1 = [...worstTimes1, ...theoreticalData1.map(d => d.time)];\r\nconst maxY2 = Math.max(...allYValues1) * 1.2;\r\n\r\nconst canvas2 = createCanvas(width, height);\r\nconst ctx2 = canvas2.getContext('2d');\r\n\r\nctx2.fillStyle = '#ffffff';\r\nctx2.fillRect(0, 0, width, height);\r\n\r\nconst axisParams2 = drawAxes(ctx2, padding, width, height, arr1, maxY2, 'Время (мс)');\r\nconst lineParams2 = { ...axisParams2, padding, xValues: arr1, maxY: maxY2, height };\r\n\r\nctx2.font = 'bold 20px Arial';\r\nctx2.fillStyle = '#000000';\r\nctx2.textAlign = 'center';\r\nctx2.fillText('Сравнение наихудшего времени с O(n log n)', width / 2, 40);\r\n\r\nctx2.strokeStyle = '#cccccc';\r\nctx2.lineWidth = 0.5;\r\nfor (let i = 1; i <= 4; i++) {\r\n    const y = padding.top + (i * (height - padding.top - padding.bottom) / 5);\r\n    ctx2.beginPath();\r\n    ctx2.moveTo(padding.left, y);\r\n    ctx2.lineTo(width - padding.right, y);\r\n    ctx2.stroke();\r\n}\r\n\r\ndrawLine(ctx2, worstData1.map(d => ({ N: d.N, value: d.time })), '#F44336', lineParams2);\r\ndrawLine(ctx2, theoreticalData1.map(d => ({ N: d.N, value: d.time })), '#2196F3', lineParams2);\r\n\r\nconst legendX = padding.left + 20;\r\nconst legendY = padding.top + 30;\r\n\r\nctx2.fillStyle = '#F44336';\r\nctx2.fillRect(legendX, legendY - 8, 20, 12);\r\nctx2.font = '12px Arial';\r\nctx2.fillStyle = '#333333';\r\nctx2.fillText('Наихудшее время (фактическое)', legendX + 30, legendY);\r\n\r\nctx2.fillStyle = '#2196F3';\r\nctx2.fillRect(legendX, legendY + 17, 20, 12);\r\nctx2.fillStyle = '#333333';\r\nctx2.fillText(`O(n log n) с C = ${C_theory1.toExponential(4)}`, legendX + 30, legendY + 25);\r\n\r\nctx2.font = '11px Arial';\r\nctx2.fillStyle = '#666666';\r\nctx2.textAlign = 'center';\r\nctx2.fillText('Константа подобрана так, чтобы кривая была выше для N > 1000', width / 2, height - 15);\r\n\r\nconst buffer2 = canvas2.toBuffer('image/png');\r\nfs.writeFileSync('chart_worst_vs_ologn.png', buffer2);\r\nconsole.log('✅ График сравнения с O(n log n) сохранен: chart_worst_vs_ologn.png');\r\n\r\n// ==============================================\r\n// ФУНКЦИИ ДЛЯ ЧАСТИ 2 (объявляем ДО тестов)\r\n// ==============================================\r\n\r\n/**\r\n * Сортировка вставками для маленьких подмассивов\r\n */\r\nfunction insertionSort(a, l, r) {\r\n    for (let i = l + 1; i <= r; i++) {\r\n        const current = a[i];\r\n        let j = i - 1;\r\n        while (j >= l && a[j] > current) {\r\n            a[j + 1] = a[j];\r\n            j--;\r\n        }\r\n        a[j + 1] = current;\r\n    }\r\n}\r\n\r\n/**\r\n * Находит индекс медианы из трёх элементов\r\n */\r\nfunction medianOfThree(a, l, m, r) {\r\n    if (a[l] > a[m]) {\r\n        if (a[m] > a[r]) return m;\r\n        else if (a[l] > a[r]) return r;\r\n        else return l;\r\n    } else {\r\n        if (a[l] > a[r]) return l;\r\n        else if (a[m] > a[r]) return r;\r\n        else return m;\r\n    }\r\n}\r\n\r\n/**\r\n * Разделение массива относительно опорного элемента\r\n */\r\nfunction partition2(a, l, r) {\r\n    const v = a[Math.floor((l + r) / 2)];\r\n    let i = l;\r\n    let j = r;\r\n\r\n    while (i <= j) {\r\n        while (a[i] < v) i++;\r\n        while (a[j] > v) j--;\r\n\r\n        if (i >= j) break;\r\n\r\n        [a[i], a[j]] = [a[j], a[i]];\r\n        i++;\r\n        j--;\r\n    }\r\n    return j;\r\n}\r\n\r\n/**\r\n * Улучшенная быстрая сортировка\r\n */\r\nfunction quickSort2(a, l = 0, r = a.length - 1) {\r\n    quickSort2Calls++;\r\n    quickSort2CurrentDepth++;\r\n    if (quickSort2CurrentDepth > quickSort2MaxDepth) {\r\n        quickSort2MaxDepth = quickSort2CurrentDepth;\r\n    }\r\n\r\n    if (r - l <= M) {\r\n        insertionSort(a, l, r);\r\n        quickSort2CurrentDepth--;\r\n        return a;\r\n    }\r\n\r\n    const mid = Math.floor((l + r) / 2);\r\n    const med = medianOfThree(a, l, mid, r);\r\n\r\n    [a[med], a[mid]] = [a[mid], a[med]];\r\n\r\n    const i = partition2(a, l, r);\r\n\r\n    quickSort2(a, l, i);\r\n    quickSort2(a, i + 1, r);\r\n\r\n    quickSort2CurrentDepth--;\r\n    return a;\r\n}\r\n\r\n// ==============================================\r\n// ЧАСТЬ 2 - ОТСОРТИРОВАННЫЙ МАССИВ\r\n// ==============================================\r\n\r\n/*** Массив размеров тестируемых массивов.*/\r\nconst arr2 = [1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000];\r\n\r\n/** Объект для хранения результатов замеров по каждому размеру N. */\r\nconst results2 = {};\r\n\r\n/** Массив всех точек замеров для общего графика. */\r\nconst allPoints2 = [];\r\n\r\n// Счётчики для части 2\r\nlet quickSort2Calls = 0;\r\nlet quickSort2MaxDepth = 0;\r\nlet quickSort2CurrentDepth = 0;\r\n\r\n// Инициализация массива результатов для каждого N\r\nfor (const N of arr2) {\r\n    results2[N] = [];\r\n}\r\n\r\nconsole.log('\\nЧАСТЬ 2: Тесты для всех значений N из списка:', arr2.join(', '), '\\n');\r\n\r\n// Основной цикл тестирования\r\nfor (const N of arr2) {\r\n    console.log(`=== Тест для N = ${N} ===`);\r\n\r\n    for (let test = 1; test <= 20; test++) {\r\n        const vectorToSort = [];\r\n        for (let i = 0; i < N; i++) {\r\n            vectorToSort[i] = i;\r\n        }\r\n\r\n        // Сброс счётчиков перед тестом\r\n        quickSort2Calls = 0;\r\n        quickSort2MaxDepth = 0;\r\n        quickSort2CurrentDepth = 0;\r\n\r\n        const start = performance.now();\r\n        quickSort2(vectorToSort, 0, vectorToSort.length - 1);\r\n        const end = performance.now();\r\n\r\n        const timeMs = end - start;\r\n        const timeSec = timeMs / 1000;\r\n\r\n        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort2Calls}, глубина=${quickSort2MaxDepth}`);\r\n\r\n        results2[N].push(timeMs);\r\n        allPoints2.push({ N, time: timeMs });\r\n    }\r\n    console.log('');\r\n}\r\n\r\n/** Сохраняем все результаты в CSV файл.*/\r\nlet csvContent2 = 'N,Test,Time_ms\\n';\r\nfor (const N of arr2) {\r\n    results2[N].forEach((time, index) => {\r\n        csvContent2 += `${N},${index + 1},${time.toFixed(3)}\\n`;\r\n    });\r\n}\r\nfs.writeFileSync('results_Sorted.csv', csvContent2);\r\nconsole.log('Результаты сохранены в results_Sorted.csv\\n');\r\n\r\n// ==============================================\r\n// ФУНКЦИЯ ДЛЯ ЧАСТИ 3 (объявляем ДО тестов)\r\n// ==============================================\r\n\r\n/**\r\n * Быстрая сортировка с разделением на три части (для одинаковых элементов)\r\n */\r\nfunction quickSort3Way(a, l = 0, r = a.length - 1) {\r\n    quickSort3Calls++;\r\n    quickSort3CurrentDepth++;\r\n    if (quickSort3CurrentDepth > quickSort3MaxDepth) {\r\n        quickSort3MaxDepth = quickSort3CurrentDepth;\r\n    }\r\n\r\n    if (r <= l) {\r\n        quickSort3CurrentDepth--;\r\n        return;\r\n    }\r\n\r\n    const v = a[r];\r\n    let i = l;\r\n    let j = r - 1;\r\n    let p = l - 1;\r\n    let q = r;\r\n\r\n    while (i <= j) {\r\n        while (i <= j && a[i] < v) i++;\r\n        while (i <= j && a[j] > v) j--;\r\n\r\n        if (i > j) break;\r\n\r\n        [a[i], a[j]] = [a[j], a[i]];\r\n\r\n        if (a[i] === v) {\r\n            p++;\r\n            [a[p], a[i]] = [a[i], a[p]];\r\n        }\r\n        i++;\r\n\r\n        if (a[j] === v) {\r\n            q--;\r\n            [a[q], a[j]] = [a[j], a[q]];\r\n        }\r\n        j--;\r\n    }\r\n\r\n    [a[i], a[r]] = [a[r], a[i]];\r\n\r\n    let leftEqual = i - 1;\r\n    let rightEqual = i + 1;\r\n\r\n    for (let k = l; k <= p; k++) {\r\n        [a[k], a[leftEqual]] = [a[leftEqual], a[k]];\r\n        leftEqual--;\r\n    }\r\n\r\n    for (let k = r - 1; k >= q; k--) {\r\n        [a[k], a[rightEqual]] = [a[rightEqual], a[k]];\r\n        rightEqual++;\r\n    }\r\n\r\n    quickSort3Way(a, l, leftEqual);\r\n    quickSort3Way(a, rightEqual, r);\r\n\r\n    quickSort3CurrentDepth--;\r\n}\r\n\r\n// ==============================================\r\n// ЧАСТЬ 3 - МАССИВ С ОДИНАКОВЫМИ ЭЛЕМЕНТАМИ\r\n// ==============================================\r\n\r\n/*** Массив размеров тестируемых массивов.*/\r\nconst arr3 = [1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000];\r\n\r\n/** Объект для хранения результатов замеров по каждому размеру N. */\r\nconst results3 = {};\r\n\r\n/** Массив всех точек замеров для общего графика. */\r\nconst allPoints3 = [];\r\n\r\n// Счётчики для части 3\r\nlet quickSort3Calls = 0;\r\nlet quickSort3MaxDepth = 0;\r\nlet quickSort3CurrentDepth = 0;\r\n\r\n// Инициализация массива результатов для каждого N\r\nfor (const N of arr3) {\r\n    results3[N] = [];\r\n}\r\n\r\nconsole.log('\\nЧАСТЬ 3: Тесты для всех значений N из списка:', arr3.join(', '), '\\n');\r\n\r\n// Основной цикл тестирования\r\nfor (const N of arr3) {\r\n    console.log(`=== Тест для N = ${N} ===`);\r\n\r\n    for (let test = 1; test <= 20; test++) {\r\n        const vectorToSort = [];\r\n        const constantValue = Math.random() * 1000;\r\n\r\n        for (let i = 0; i < N; i++) {\r\n            vectorToSort[i] = constantValue;\r\n        }\r\n\r\n        // Сброс счётчиков перед тестом\r\n        quickSort3Calls = 0;\r\n        quickSort3MaxDepth = 0;\r\n        quickSort3CurrentDepth = 0;\r\n\r\n        const start = performance.now();\r\n        quickSort3Way(vectorToSort, 0, vectorToSort.length - 1);\r\n        const end = performance.now();\r\n\r\n        const timeMs = end - start;\r\n        const timeSec = timeMs / 1000;\r\n\r\n        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort3Calls}, глубина=${quickSort3MaxDepth}`);\r\n\r\n        results3[N].push(timeMs);\r\n        allPoints3.push({ N, time: timeMs });\r\n    }\r\n    console.log('');\r\n}\r\n\r\n/** Сохраняем все результаты в CSV файл.*/\r\nlet csvContent3 = 'N,Test,Time_ms\\n';\r\nfor (const N of arr3) {\r\n    results3[N].forEach((time, index) => {\r\n        csvContent3 += `${N},${index + 1},${time.toFixed(3)}\\n`;\r\n    });\r\n}\r\nfs.writeFileSync('results_Identical.csv', csvContent3);\r\nconsole.log('Результаты сохранены в results_Identical.csv\\n');\r\n\r\n// ==============================================\r\n// ФУНКЦИИ ДЛЯ ЧАСТИ 4 (объявляем ДО тестов)\r\n// ==============================================\r\n\r\n/**\r\n * Создает массив, на котором быстрая сортировка с выбором среднего элемента\r\n * работает максимально долго (Θ(n²))\r\n */\r\nfunction generateAntiQsortArray(n) {\r\n    const a = [];\r\n    for (let i = 0; i < n; i++) {\r\n        a[i] = i + 1;\r\n    }\r\n    for (let i = 0; i < n; i++) {\r\n        const j = Math.floor(i / 2);\r\n        [a[i], a[j]] = [a[j], a[i]];\r\n    }\r\n    return a;\r\n}\r\n\r\n/**\r\n * Разделение массива (стандартное, с выбором среднего элемента)\r\n */\r\nfunction partition4(a, l, r) {\r\n    const v = a[Math.floor((l + r) / 2)];\r\n    let i = l;\r\n    let j = r;\r\n\r\n    while (i <= j) {\r\n        while (a[i] < v) i++;\r\n        while (a[j] > v) j--;\r\n        if (i >= j) break;\r\n        [a[i], a[j]] = [a[j], a[i]];\r\n        i++;\r\n        j--;\r\n    }\r\n    return j;\r\n}\r\n\r\n/**\r\n * Итеративная быстрая сортировка (без рекурсии)\r\n */\r\nfunction quickSort4(a, l = 0, r = a.length - 1) {\r\n    // Стек для хранения границ подмассивов и глубины\r\n    const stack = [{ l, r, depth: 1 }];\r\n    let iterations = 0;\r\n\r\n    while (stack.length > 0) {\r\n        iterations++; // Считаем каждую итерацию (разделение)\r\n        const { l, r, depth } = stack.pop();\r\n\r\n        // Обновляем максимальную глубину\r\n        if (depth > quickSort4MaxDepth) {\r\n            quickSort4MaxDepth = depth;\r\n        }\r\n\r\n        if (l < r) {\r\n            const q = partition4(a, l, r);\r\n\r\n            // Сохраняем подмассивы в стек с увеличенной глубиной\r\n            // Сначала больший, чтобы минимизировать стек\r\n            if (q - l > r - q) {\r\n                stack.push({ l, r: q, depth: depth + 1 });\r\n                stack.push({ l: q + 1, r, depth: depth + 1 });\r\n            } else {\r\n                stack.push({ l: q + 1, r, depth: depth + 1 });\r\n                stack.push({ l, r: q, depth: depth + 1 });\r\n            }\r\n        }\r\n    }\r\n\r\n    quickSort4Calls = iterations; // Сохраняем количество итераций\r\n    return a;\r\n}\r\n\r\n// ==============================================\r\n// ЧАСТЬ 4 - МАССИВ С МАКСИМАЛЬНЫМ КОЛИЧЕСТВОМ СРАВНЕНИЙ (antiQsort)\r\n// ==============================================\r\n\r\n/*** Массив размеров тестируемых массивов.*/\r\nconst arr4 = [1000, 2000, 4000];\r\n\r\n/** Объект для хранения результатов замеров по каждому размеру N. */\r\nconst results4 = {};\r\n\r\n/** Массив всех точек замеров для общего графика. */\r\nconst allPoints4 = [];\r\n\r\n// Счётчики для части 4\r\nlet quickSort4Calls = 0;\r\nlet quickSort4MaxDepth = 0;\r\n\r\n// Инициализация массива результатов для каждого N\r\nfor (const N of arr4) {\r\n    results4[N] = [];\r\n}\r\n\r\nconsole.log('\\nЧАСТЬ 4: Тесты для всех значений N из списка:', arr4.join(', '), '\\n');\r\n\r\n// Основной цикл тестирования (часть 4)\r\nfor (const N of arr4) {\r\n    console.log(`=== Тест для N = ${N} ===`);\r\n\r\n    for (let test = 1; test <= 20; test++) {\r\n        const vectorToSort = generateAntiQsortArray(N);\r\n\r\n        // Сброс счётчиков перед тестом\r\n        quickSort4Calls = 0;\r\n        quickSort4MaxDepth = 0;\r\n\r\n        const start = performance.now();\r\n        quickSort4(vectorToSort, 0, vectorToSort.length - 1);\r\n        const end = performance.now();\r\n\r\n        const timeMs = end - start;\r\n        const timeSec = timeMs / 1000;\r\n\r\n        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort4Calls}, глубина=${quickSort4MaxDepth}`);\r\n\r\n        results4[N].push(timeMs);\r\n        allPoints4.push({ N, time: timeMs });\r\n    }\r\n    console.log('');\r\n}\r\n\r\n/** Сохраняем все результаты в CSV файл.*/\r\nlet csvContent4 = 'N,Test,Time_ms\\n';\r\nfor (const N of arr4) {\r\n    results4[N].forEach((time, index) => {\r\n        csvContent4 += `${N},${index + 1},${time.toFixed(3)}\\n`;\r\n    });\r\n}\r\nfs.writeFileSync('results_WorstCase.csv', csvContent4);\r\nconsole.log('Результаты сохранены в results_WorstCase.csv\\n');\r\n\r\n// ==============================================\r\n// ФУНКЦИИ ДЛЯ ЧАСТИ 5 (объявляем ДО тестов)\r\n// ==============================================\r\n\r\n/**\r\n * Создает массив, на котором быстрая сортировка с детерминированным выбором опорного элемента\r\n * (например, всегда последний элемент) работает максимально долго (Θ(n²))\r\n */\r\nfunction generateDeterministicWorstCase(n) {\r\n    const pairs = [];\r\n    for (let i = 0; i < n; i++) {\r\n        pairs.push({ val: 0, key: i });\r\n    }\r\n\r\n    let currentValue = n;\r\n\r\n    function partitionPairs(arr, l, r) {\r\n        const pivotIndex = r;\r\n        const pivotVal = arr[pivotIndex].val;\r\n        let i = l - 1;\r\n\r\n        for (let j = l; j < r; j++) {\r\n            if (arr[j].val <= pivotVal) {\r\n                i++;\r\n                [arr[i], arr[j]] = [arr[j], arr[i]];\r\n            }\r\n        }\r\n\r\n        [arr[i + 1], arr[r]] = [arr[r], arr[i + 1]];\r\n        return i + 1;\r\n    }\r\n\r\n    const stack = [{ l: 0, r: n - 1 }];\r\n\r\n    while (stack.length > 0) {\r\n        const { l, r } = stack.pop();\r\n\r\n        if (l < r) {\r\n            const pivotIndex = r;\r\n            pairs[pivotIndex].val = currentValue;\r\n            currentValue--;\r\n\r\n            const q = partitionPairs(pairs, l, r);\r\n\r\n            stack.push({ l: q + 1, r: r });\r\n            stack.push({ l: l, r: q - 1 });\r\n        }\r\n    }\r\n\r\n    pairs.sort((a, b) => a.key - b.key);\r\n    return pairs.map(p => p.val);\r\n}\r\n\r\n/**\r\n * Разделение массива (с выбором последнего элемента в качестве опорного)\r\n */\r\nfunction partitionLast(a, l, r) {\r\n    const v = a[r];\r\n    let i = l - 1;\r\n\r\n    for (let j = l; j < r; j++) {\r\n        if (a[j] <= v) {\r\n            i++;\r\n            [a[i], a[j]] = [a[j], a[i]];\r\n        }\r\n    }\r\n\r\n    [a[i + 1], a[r]] = [a[r], a[i + 1]];\r\n    return i + 1;\r\n}\r\n\r\n/**\r\n * Итеративная быстрая сортировка (с выбором последнего элемента)\r\n */\r\nfunction quickSortLast(a, l = 0, r = a.length - 1) {\r\n    const stack = [{ l, r, depth: 1 }];\r\n    let iterations = 0;\r\n\r\n    while (stack.length > 0) {\r\n        iterations++;\r\n        const { l, r, depth } = stack.pop();\r\n\r\n        if (depth > quickSort5MaxDepth) {\r\n            quickSort5MaxDepth = depth;\r\n        }\r\n\r\n        if (l < r) {\r\n            const q = partitionLast(a, l, r);\r\n\r\n            // Сохраняем подмассивы в стек с увеличенной глубиной\r\n            if (q - l > r - q) {\r\n                stack.push({ l, r: q - 1, depth: depth + 1 });\r\n                stack.push({ l: q + 1, r, depth: depth + 1 });\r\n            } else {\r\n                stack.push({ l: q + 1, r, depth: depth + 1 });\r\n                stack.push({ l, r: q - 1, depth: depth + 1 });\r\n            }\r\n        }\r\n    }\r\n\r\n    quickSort5Calls = iterations;\r\n    return a;\r\n}\r\n\r\n// ==============================================\r\n// ЧАСТЬ 5 - ДЕТЕРМИНИРОВАННЫЙ ХУДШИЙ СЛУЧАЙ\r\n// ==============================================\r\n\r\n/*** Массив размеров тестируемых массивов.*/\r\nconst arr5 = [1000, 2000, 4000];\r\n\r\n/** Объект для хранения результатов замеров по каждому размеру N. */\r\nconst results5 = {};\r\n\r\n/** Массив всех точек замеров для общего графика. */\r\nconst allPoints5 = [];\r\n\r\n// Счётчики для части 5\r\nlet quickSort5Calls = 0;\r\nlet quickSort5MaxDepth = 0;\r\n\r\n// Инициализация массива результатов для каждого N\r\nfor (const N of arr5) {\r\n    results5[N] = [];\r\n}\r\n\r\nconsole.log('\\nЧАСТЬ 5: Тесты для всех значений N из списка:', arr5.join(', '), '\\n');\r\n\r\n// Основной цикл тестирования (часть 5)\r\nfor (const N of arr5) {\r\n    console.log(`=== Тест для N = ${N} ===`);\r\n\r\n    for (let test = 1; test <= 20; test++) {\r\n        const vectorToSort = generateDeterministicWorstCase(N);\r\n\r\n        // Сброс счётчиков перед тестом\r\n        quickSort5Calls = 0;\r\n        quickSort5MaxDepth = 0;\r\n\r\n        const start = performance.now();\r\n        quickSortLast(vectorToSort, 0, vectorToSort.length - 1);\r\n        const end = performance.now();\r\n\r\n        const timeMs = end - start;\r\n        const timeSec = timeMs / 1000;\r\n\r\n        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort5Calls}, глубина=${quickSort5MaxDepth}`);\r\n\r\n        results5[N].push(timeMs);\r\n        allPoints5.push({ N, time: timeMs });\r\n    }\r\n    console.log('');\r\n}\r\n\r\n/** Сохраняем все результаты в CSV файл.*/\r\nlet csvContent5 = 'N,Test,Time_ms\\n';\r\nfor (const N of arr5) {\r\n    results5[N].forEach((time, index) => {\r\n        csvContent5 += `${N},${index + 1},${time.toFixed(3)}\\n`;\r\n    });\r\n}\r\nfs.writeFileSync('results_DeterministicWorstCase.csv', csvContent5);\r\nconsole.log('Результаты сохранены в results_DeterministicWorstCase.csv\\n');
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/lab/lab_2/sort.js b/lab/lab_2/sort.js
+--- a/lab/lab_2/sort.js	(revision 0cebf3ef5961f8b2e4f12b744c3418904dcd6cdc)
++++ b/lab/lab_2/sort.js	(date 1773571797524)
+@@ -1,26 +1,59 @@
++/**
++ * Массивы данных для построения графиков
++ * @type {Array<{N: number, time: number}>}
++ */
+ const fs = require('fs');
+ const { createCanvas } = require('canvas');
+ 
+ // ==============================================
+ // КОНСТАНТЫ
+ // ==============================================
+-const M = 10; // Порог для переключения на сортировку вставками
++/**
++ * Порог для переключения на сортировку вставками
++ * @constant {number}
++ */
++const M = 10;
+ 
+ // ==============================================
+ // ЧАСТЬ 1 - СЛУЧАЙНЫЙ МАССИВ
+ // ==============================================
+ 
+-/*** Массив размеров тестируемых массивов.*/
++/**
++ * Массив размеров тестируемых массивов для части 1
++ * @type {number[]}
++ */
+ const arr1 = [1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000];
+ 
+-// Счётчики для части 1
++/**
++ * Счетчик количества вызовов функции быстрой сортировки для части 1
++ * @type {number}
++ */
+ let quickSort1Calls = 0;
++
++/**
++ * Максимальная глубина рекурсии для части 1
++ * @type {number}
++ */
+ let quickSort1MaxDepth = 0;
++
++/**
++ * Текущая глубина рекурсии для части 1
++ * @type {number}
++ */
+ let quickSort1CurrentDepth = 0;
+-let quickSort1Swaps = 0; // Счетчик обменов
++
++/**
++ * Счетчик количества обменов для части 1
++ * @type {number}
++ */
++let quickSort1Swaps = 0;
+ 
+ /**
+  * Быстрая сортировка (сортировка Хоара)
++ * @param {number[]} a - Сортируемый массив
++ * @param {number} l - Левая граница сортировки
++ * @param {number} r - Правая граница сортировки
++ * @returns {number[]} Отсортированный массив
+  */
+ function quickSort1(a, l, r) {
+     quickSort1Calls++;
+@@ -41,6 +74,10 @@
+ 
+ /**
+  * Разделение массива относительно опорного элемента
++ * @param {number[]} a - Массив для разделения
++ * @param {number} l - Левая граница
++ * @param {number} r - Правая граница
++ * @returns {number} Индекс разделения
+  */
+ function partition1(a, l, r) {
+     const v = a[Math.floor((l + r) / 2)];
+@@ -54,14 +91,17 @@
+         if (i >= j) break;
+ 
+         [a[i], a[j]] = [a[j], a[i]];
+-        quickSort1Swaps++; // Увеличиваем счетчик обменов
++        quickSort1Swaps++;
+         i++;
+         j--;
+     }
+     return j;
+ }
+ 
+-/** Объект для хранения результатов замеров по каждому размеру N. */
++/**
++ * Объект для хранения результатов замеров по каждому размеру N для части 1
++ * @type {Object.<string, {time: number[], depth: number[], swaps: number[], calls: number[]}>}
++ */
+ const results1 = {
+     time: {},
+     depth: {},
+@@ -113,7 +153,10 @@
+     console.log('');
+ }
+ 
+-/** Сохраняем все результаты в CSV файл.*/
++/**
++ * Сохраняем все результаты в CSV файл для части 1
++ * @type {string}
++ */
+ let csvContent1 = 'N,Test,Time_ms,Depth,Swaps,Calls\n';
+ for (const N of arr1) {
+     for (let i = 0; i < results1.time[N].length; i++) {
+@@ -135,10 +178,89 @@
+     console.log(`${N}\t${min.toFixed(3)} мс\t\t${max.toFixed(3)} мс\t\t${avg.toFixed(3)} мс`);
+ }
+ 
++// ==============================================
++// СОХРАНЕНИЕ ДАННЫХ ДЛЯ ГРАФИКОВ (только для случайных массивов)
++// ==============================================
++
++console.log('\n' + '='.repeat(50));
++console.log('📊 СОХРАНЕНИЕ ДАННЫХ ДЛЯ ГРАФИКОВ');
++console.log('='.repeat(50));
++
++// 1. CSV для времени выполнения (мин, макс, среднее)
++/**
++ * Строка CSV с данными времени выполнения для части 1
++ * @type {string}
++ */
++let timeStatsCSV = 'N,MinTime_ms,MaxTime_ms,AvgTime_ms\n';
++for (const N of arr1) {
++    const times = results1.time[N];
++    const min = Math.min(...times);
++    const max = Math.max(...times);
++    const avg = times.reduce((a, b) => a + b, 0) / times.length;
++    timeStatsCSV += `${N},${min.toFixed(3)},${max.toFixed(3)},${avg.toFixed(3)}\n`;
++}
++fs.writeFileSync('time_stats.csv', timeStatsCSV);
++console.log('✅ time_stats.csv сохранен (мин/макс/среднее время)');
++
++// 2. CSV для глубины рекурсии (мин, макс, среднее)
++/**
++ * Строка CSV с данными глубины рекурсии для части 1
++ * @type {string}
++ */
++let depthStatsCSV = 'N,MinDepth,MaxDepth,AvgDepth\n';
++for (const N of arr1) {
++    const depths = results1.depth[N];
++    const min = Math.min(...depths);
++    const max = Math.max(...depths);
++    const avg = depths.reduce((a, b) => a + b, 0) / depths.length;
++    depthStatsCSV += `${N},${min},${max},${avg.toFixed(2)}\n`;
++}
++fs.writeFileSync('depth_stats.csv', depthStatsCSV);
++console.log('✅ depth_stats.csv сохранен (мин/макс/средняя глубина)');
++
++// 3. CSV для количества обменов (мин, макс, среднее)
++/**
++ * Строка CSV с данными количества обменов для части 1
++ * @type {string}
++ */
++let swapsStatsCSV = 'N,MinSwaps,MaxSwaps,AvgSwaps\n';
++for (const N of arr1) {
++    const swaps = results1.swaps[N];
++    const min = Math.min(...swaps);
++    const max = Math.max(...swaps);
++    const avg = swaps.reduce((a, b) => a + b, 0) / swaps.length;
++    swapsStatsCSV += `${N},${min},${max},${avg.toFixed(2)}\n`;
++}
++fs.writeFileSync('swaps_stats.csv', swapsStatsCSV);
++console.log('✅ swaps_stats.csv сохранен (мин/макс/среднее количество обменов)');
++
++// 4. CSV для количества вызовов (мин, макс, среднее)
++/**
++ * Строка CSV с данными количества вызовов для части 1
++ * @type {string}
++ */
++let callsStatsCSV = 'N,MinCalls,MaxCalls,AvgCalls\n';
++for (const N of arr1) {
++    const calls = results1.calls[N];
++    const min = Math.min(...calls);
++    const max = Math.max(...calls);
++    const avg = calls.reduce((a, b) => a + b, 0) / calls.length;
++    callsStatsCSV += `${N},${min},${max},${avg.toFixed(2)}\n`;
++}
++fs.writeFileSync('calls_stats.csv', callsStatsCSV);
++console.log('✅ calls_stats.csv сохранен (мин/макс/среднее количество вызовов)');
++
+ // ==============================================
+ // ФУНКЦИИ ДЛЯ ПОСТРОЕНИЯ ГРАФИКОВ
+ // ==============================================
+ 
++/**
++ * Настройка холста для рисования графика
++ * @param {number} width - Ширина холста
++ * @param {number} height - Высота холста
++ * @param {string} title - Заголовок графика
++ * @returns {{canvas: Canvas, ctx: CanvasRenderingContext2D}} Объект с холстом и контекстом
++ */
+ function setupCanvas(width, height, title) {
+     const canvas = createCanvas(width, height);
+     const ctx = canvas.getContext('2d');
+@@ -154,6 +276,17 @@
+     return { canvas, ctx };
+ }
+ 
++/**
++ * Рисование осей координат на графике
++ * @param {CanvasRenderingContext2D} ctx - Контекст рисования
++ * @param {{left: number, right: number, top: number, bottom: number}} padding - Отступы от краев холста
++ * @param {number} width - Ширина холста
++ * @param {number} height - Высота холста
++ * @param {number[]} xValues - Значения по оси X
++ * @param {number} maxY - Максимальное значение по оси Y
++ * @param {string} yLabel - Подпись оси Y
++ * @returns {{graphWidth: number, graphHeight: number, xStep: number}} Параметры области графика
++ */
+ function drawAxes(ctx, padding, width, height, xValues, maxY, yLabel) {
+     const graphWidth = width - padding.left - padding.right;
+     const graphHeight = height - padding.top - padding.bottom;
+@@ -212,6 +345,13 @@
+     return { graphWidth, graphHeight, xStep };
+ }
+ 
++/**
++ * Рисование линии на графике по точкам
++ * @param {CanvasRenderingContext2D} ctx - Контекст рисования
++ * @param {Array<{N: number, value: number}>} data - Данные для отображения
++ * @param {string} color - Цвет линии
++ * @param {Object} params - Параметры рисования
++ */
+ function drawLine(ctx, data, color, params) {
+     const { padding, xStep, xValues, maxY, graphHeight, height } = params;
+ 
+@@ -248,6 +388,13 @@
+     }
+ }
+ 
++/**
++ * Рисование легенды на графике
++ * @param {CanvasRenderingContext2D} ctx - Контекст рисования
++ * @param {Array<{color: string, text: string}>} items - Элементы легенды
++ * @param {number} x - Координата X
++ * @param {number} y - Координата Y
++ */
+ function drawLegend(ctx, items, x, y) {
+     ctx.font = '12px Arial';
+     ctx.textAlign = 'left';
+@@ -267,6 +414,9 @@
+ // ГРАФИК 1: Время выполнения (мин, макс, среднее)
+ // ==============================================
+ 
++/**
++ * Создание графика времени выполнения для части 1
++ */
+ function createTimeChart() {
+     const minData = [];
+     const maxData = [];
+@@ -308,6 +458,9 @@
+ // ГРАФИК 2: Глубина рекурсии (мин, макс, среднее)
+ // ==============================================
+ 
++/**
++ * Создание графика глубины рекурсии для части 1
++ */
+ function createDepthChart() {
+     const minData = [];
+     const maxData = [];
+@@ -349,6 +502,9 @@
+ // ГРАФИК 3: Количество обменов (мин, макс, среднее)
+ // ==============================================
+ 
++/**
++ * Создание графика количества обменов для части 1
++ */
+ function createSwapsChart() {
+     const minData = [];
+     const maxData = [];
+@@ -390,6 +546,9 @@
+ // ГРАФИК 4: Количество вызовов (мин, макс, среднее)
+ // ==============================================
+ 
++/**
++ * Создание графика количества вызовов для части 1
++ */
+ function createCallsChart() {
+     const minData = [];
+     const maxData = [];
+@@ -445,6 +604,10 @@
+ console.log('📊 МАКСИМАЛЬНОЕ ВРЕМЯ СОРТИРОВКИ ПО РАЗМЕРАМ');
+ console.log('='.repeat(50));
+ 
++/**
++ * Массив максимального времени для каждого размера
++ * @type {number[]}
++ */
+ const maxTimes1 = [];
+ for (const N of arr1) {
+     const maxTime = Math.max(...results1.time[N]);
+@@ -452,6 +615,10 @@
+     console.log(`N = ${N}: ${maxTime.toFixed(3)} мс`);
+ }
+ 
++/**
++ * Строка CSV с максимальным временем для части 1
++ * @type {string}
++ */
+ let maxCsvContent1 = 'N,MaxTime_ms\n';
+ for (let i = 0; i < arr1.length; i++) {
+     maxCsvContent1 += `${arr1[i]},${maxTimes1[i].toFixed(3)}\n`;
+@@ -480,6 +647,10 @@
+ console.log('📊 ПОСТРОЕНИЕ ГРАФИКА СЛОЖНОСТИ O(n log n)');
+ console.log('='.repeat(50));
+ 
++/**
++ * Массив наихудшего времени для каждого размера
++ * @type {number[]}
++ */
+ const worstTimes1 = [];
+ for (const N of arr1) {
+     const maxTime = Math.max(...results1.time[N]);
+@@ -497,6 +668,10 @@
+ C_theory1 = C_theory1 * 1.4;
+ console.log(`\nПодобрана константа C_theory = ${C_theory1.toExponential(4)}`);
+ 
++/**
++ * Массив теоретических значений для O(n log n)
++ * @type {Array<{N: number, time: number}>}
++ */
+ const theoreticalData1 = [];
+ for (let i = 0; i < arr1.length; i++) {
+     theoreticalData1.push({
+@@ -505,6 +680,10 @@
+     });
+ }
+ 
++/**
++ * Массив наихудших значений времени
++ * @type {Array<{N: number, time: number}>}
++ */
+ const worstData1 = [];
+ for (let i = 0; i < arr1.length; i++) {
+     worstData1.push({ N: arr1[i], time: worstTimes1[i] });
+@@ -572,6 +751,9 @@
+ 
+ /**
+  * Сортировка вставками для маленьких подмассивов
++ * @param {number[]} a - Сортируемый массив
++ * @param {number} l - Левая граница
++ * @param {number} r - Правая граница
+  */
+ function insertionSort(a, l, r) {
+     for (let i = l + 1; i <= r; i++) {
+@@ -587,6 +769,11 @@
+ 
+ /**
+  * Находит индекс медианы из трёх элементов
++ * @param {number[]} a - Массив
++ * @param {number} l - Индекс левого элемента
++ * @param {number} m - Индекс среднего элемента
++ * @param {number} r - Индекс правого элемента
++ * @returns {number} Индекс медианного элемента
+  */
+ function medianOfThree(a, l, m, r) {
+     if (a[l] > a[m]) {
+@@ -602,6 +789,10 @@
+ 
+ /**
+  * Разделение массива относительно опорного элемента
++ * @param {number[]} a - Массив для разделения
++ * @param {number} l - Левая граница
++ * @param {number} r - Правая граница
++ * @returns {number} Индекс разделения
+  */
+ function partition2(a, l, r) {
+     const v = a[Math.floor((l + r) / 2)];
+@@ -615,14 +806,44 @@
+         if (i >= j) break;
+ 
+         [a[i], a[j]] = [a[j], a[i]];
++        quickSort2Swaps++;
+         i++;
+         j--;
+     }
+     return j;
+ }
+ 
++// Счётчики для части 2
++/**
++ * Счетчик количества вызовов функции быстрой сортировки для части 2
++ * @type {number}
++ */
++let quickSort2Calls = 0;
++
++/**
++ * Максимальная глубина рекурсии для части 2
++ * @type {number}
++ */
++let quickSort2MaxDepth = 0;
++
++/**
++ * Текущая глубина рекурсии для части 2
++ * @type {number}
++ */
++let quickSort2CurrentDepth = 0;
++
++/**
++ * Счетчик количества обменов для части 2
++ * @type {number}
++ */
++let quickSort2Swaps = 0;
++
+ /**
+  * Улучшенная быстрая сортировка
++ * @param {number[]} a - Сортируемый массив
++ * @param {number} l - Левая граница
++ * @param {number} r - Правая граница
++ * @returns {number[]} Отсортированный массив
+  */
+ function quickSort2(a, l = 0, r = a.length - 1) {
+     quickSort2Calls++;
+@@ -641,6 +862,7 @@
+     const med = medianOfThree(a, l, mid, r);
+ 
+     [a[med], a[mid]] = [a[mid], a[med]];
++    quickSort2Swaps++;
+ 
+     const i = partition2(a, l, r);
+ 
+@@ -655,23 +877,35 @@
+ // ЧАСТЬ 2 - ОТСОРТИРОВАННЫЙ МАССИВ
+ // ==============================================
+ 
+-/*** Массив размеров тестируемых массивов.*/
++/**
++ * Массив размеров тестируемых массивов для части 2
++ * @type {number[]}
++ */
+ const arr2 = [1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000];
+ 
+-/** Объект для хранения результатов замеров по каждому размеру N. */
+-const results2 = {};
++/**
++ * Объект для хранения результатов замеров по каждому размеру N для части 2
++ * @type {Object.<string, {time: number[], depth: number[], swaps: number[], calls: number[]}>}
++ */
++const results2 = {
++    time: {},
++    depth: {},
++    swaps: {},
++    calls: {}
++};
+ 
+-/** Массив всех точек замеров для общего графика. */
++/**
++ * Массив всех точек замеров для общего графика части 2
++ * @type {Array<{N: number, time: number}>}
++ */
+ const allPoints2 = [];
+ 
+-// Счётчики для части 2
+-let quickSort2Calls = 0;
+-let quickSort2MaxDepth = 0;
+-let quickSort2CurrentDepth = 0;
+-
+ // Инициализация массива результатов для каждого N
+ for (const N of arr2) {
+-    results2[N] = [];
++    results2.time[N] = [];
++    results2.depth[N] = [];
++    results2.swaps[N] = [];
++    results2.calls[N] = [];
+ }
+ 
+ console.log('\nЧАСТЬ 2: Тесты для всех значений N из списка:', arr2.join(', '), '\n');
+@@ -690,6 +924,7 @@
+         quickSort2Calls = 0;
+         quickSort2MaxDepth = 0;
+         quickSort2CurrentDepth = 0;
++        quickSort2Swaps = 0;
+ 
+         const start = performance.now();
+         quickSort2(vectorToSort, 0, vectorToSort.length - 1);
+@@ -698,30 +933,65 @@
+         const timeMs = end - start;
+         const timeSec = timeMs / 1000;
+ 
+-        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort2Calls}, глубина=${quickSort2MaxDepth}`);
++        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort2Calls}, глубина=${quickSort2MaxDepth}, обменов=${quickSort2Swaps}`);
+ 
+-        results2[N].push(timeMs);
++        // Сохраняем все метрики
++        results2.time[N].push(timeMs);
++        results2.depth[N].push(quickSort2MaxDepth);
++        results2.swaps[N].push(quickSort2Swaps);
++        results2.calls[N].push(quickSort2Calls);
+         allPoints2.push({ N, time: timeMs });
+     }
+     console.log('');
+ }
+ 
+-/** Сохраняем все результаты в CSV файл.*/
+-let csvContent2 = 'N,Test,Time_ms\n';
++/**
++ * Сохраняем все результаты в CSV файл для части 2
++ * @type {string}
++ */
++let csvContent2 = 'N,Test,Time_ms,Depth,Swaps,Calls\n';
+ for (const N of arr2) {
+-    results2[N].forEach((time, index) => {
+-        csvContent2 += `${N},${index + 1},${time.toFixed(3)}\n`;
+-    });
++    for (let i = 0; i < results2.time[N].length; i++) {
++        csvContent2 += `${N},${i + 1},${results2.time[N][i].toFixed(3)},${results2.depth[N][i]},${results2.swaps[N][i]},${results2.calls[N][i]}\n`;
++    }
+ }
+ fs.writeFileSync('results_Sorted.csv', csvContent2);
+ console.log('Результаты сохранены в results_Sorted.csv\n');
+ 
+ // ==============================================
+-// ФУНКЦИЯ ДЛЯ ЧАСТИ 3 (объявляем ДО тестов)
++// ФУНКЦИИ ДЛЯ ЧАСТИ 3 (объявляем ДО тестов)
+ // ==============================================
+ 
++// Счётчики для части 3
++/**
++ * Счетчик количества вызовов функции быстрой сортировки для части 3
++ * @type {number}
++ */
++let quickSort3Calls = 0;
++
++/**
++ * Максимальная глубина рекурсии для части 3
++ * @type {number}
++ */
++let quickSort3MaxDepth = 0;
++
++/**
++ * Текущая глубина рекурсии для части 3
++ * @type {number}
++ */
++let quickSort3CurrentDepth = 0;
++
++/**
++ * Счетчик количества обменов для части 3
++ * @type {number}
++ */
++let quickSort3Swaps = 0;
++
+ /**
+  * Быстрая сортировка с разделением на три части (для одинаковых элементов)
++ * @param {number[]} a - Сортируемый массив
++ * @param {number} l - Левая граница
++ * @param {number} r - Правая граница
+  */
+ function quickSort3Way(a, l = 0, r = a.length - 1) {
+     quickSort3Calls++;
+@@ -748,32 +1018,38 @@
+         if (i > j) break;
+ 
+         [a[i], a[j]] = [a[j], a[i]];
++        quickSort3Swaps++;
+ 
+         if (a[i] === v) {
+             p++;
+             [a[p], a[i]] = [a[i], a[p]];
++            quickSort3Swaps++;
+         }
+         i++;
+ 
+         if (a[j] === v) {
+             q--;
+             [a[q], a[j]] = [a[j], a[q]];
++            quickSort3Swaps++;
+         }
+         j--;
+     }
+ 
+     [a[i], a[r]] = [a[r], a[i]];
++    quickSort3Swaps++;
+ 
+     let leftEqual = i - 1;
+     let rightEqual = i + 1;
+ 
+     for (let k = l; k <= p; k++) {
+         [a[k], a[leftEqual]] = [a[leftEqual], a[k]];
++        quickSort3Swaps++;
+         leftEqual--;
+     }
+ 
+     for (let k = r - 1; k >= q; k--) {
+         [a[k], a[rightEqual]] = [a[rightEqual], a[k]];
++        quickSort3Swaps++;
+         rightEqual++;
+     }
+ 
+@@ -787,23 +1063,35 @@
+ // ЧАСТЬ 3 - МАССИВ С ОДИНАКОВЫМИ ЭЛЕМЕНТАМИ
+ // ==============================================
+ 
+-/*** Массив размеров тестируемых массивов.*/
++/**
++ * Массив размеров тестируемых массивов для части 3
++ * @type {number[]}
++ */
+ const arr3 = [1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000];
+ 
+-/** Объект для хранения результатов замеров по каждому размеру N. */
+-const results3 = {};
++/**
++ * Объект для хранения результатов замеров по каждому размеру N для части 3
++ * @type {Object.<string, {time: number[], depth: number[], swaps: number[], calls: number[]}>}
++ */
++const results3 = {
++    time: {},
++    depth: {},
++    swaps: {},
++    calls: {}
++};
+ 
+-/** Массив всех точек замеров для общего графика. */
++/**
++ * Массив всех точек замеров для общего графика части 3
++ * @type {Array<{N: number, time: number}>}
++ */
+ const allPoints3 = [];
+ 
+-// Счётчики для части 3
+-let quickSort3Calls = 0;
+-let quickSort3MaxDepth = 0;
+-let quickSort3CurrentDepth = 0;
+-
+ // Инициализация массива результатов для каждого N
+ for (const N of arr3) {
+-    results3[N] = [];
++    results3.time[N] = [];
++    results3.depth[N] = [];
++    results3.swaps[N] = [];
++    results3.calls[N] = [];
+ }
+ 
+ console.log('\nЧАСТЬ 3: Тесты для всех значений N из списка:', arr3.join(', '), '\n');
+@@ -824,6 +1112,7 @@
+         quickSort3Calls = 0;
+         quickSort3MaxDepth = 0;
+         quickSort3CurrentDepth = 0;
++        quickSort3Swaps = 0;
+ 
+         const start = performance.now();
+         quickSort3Way(vectorToSort, 0, vectorToSort.length - 1);
+@@ -832,20 +1121,27 @@
+         const timeMs = end - start;
+         const timeSec = timeMs / 1000;
+ 
+-        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort3Calls}, глубина=${quickSort3MaxDepth}`);
++        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort3Calls}, глубина=${quickSort3MaxDepth}, обменов=${quickSort3Swaps}`);
+ 
+-        results3[N].push(timeMs);
++        // Сохраняем все метрики
++        results3.time[N].push(timeMs);
++        results3.depth[N].push(quickSort3MaxDepth);
++        results3.swaps[N].push(quickSort3Swaps);
++        results3.calls[N].push(quickSort3Calls);
+         allPoints3.push({ N, time: timeMs });
+     }
+     console.log('');
+ }
+ 
+-/** Сохраняем все результаты в CSV файл.*/
+-let csvContent3 = 'N,Test,Time_ms\n';
++/**
++ * Сохраняем все результаты в CSV файл для части 3
++ * @type {string}
++ */
++let csvContent3 = 'N,Test,Time_ms,Depth,Swaps,Calls\n';
+ for (const N of arr3) {
+-    results3[N].forEach((time, index) => {
+-        csvContent3 += `${N},${index + 1},${time.toFixed(3)}\n`;
+-    });
++    for (let i = 0; i < results3.time[N].length; i++) {
++        csvContent3 += `${N},${i + 1},${results3.time[N][i].toFixed(3)},${results3.depth[N][i]},${results3.swaps[N][i]},${results3.calls[N][i]}\n`;
++    }
+ }
+ fs.writeFileSync('results_Identical.csv', csvContent3);
+ console.log('Результаты сохранены в results_Identical.csv\n');
+@@ -854,9 +1150,30 @@
+ // ФУНКЦИИ ДЛЯ ЧАСТИ 4 (объявляем ДО тестов)
+ // ==============================================
+ 
++// Счётчики для части 4
++/**
++ * Счетчик количества вызовов функции быстрой сортировки для части 4
++ * @type {number}
++ */
++let quickSort4Calls = 0;
++
++/**
++ * Максимальная глубина рекурсии для части 4
++ * @type {number}
++ */
++let quickSort4MaxDepth = 0;
++
++/**
++ * Счетчик количества обменов для части 4
++ * @type {number}
++ */
++let quickSort4Swaps = 0;
++
+ /**
+  * Создает массив, на котором быстрая сортировка с выбором среднего элемента
+  * работает максимально долго (Θ(n²))
++ * @param {number} n - Размер массива
++ * @returns {number[]} Сгенерированный массив
+  */
+ function generateAntiQsortArray(n) {
+     const a = [];
+@@ -872,6 +1189,10 @@
+ 
+ /**
+  * Разделение массива (стандартное, с выбором среднего элемента)
++ * @param {number[]} a - Массив для разделения
++ * @param {number} l - Левая граница
++ * @param {number} r - Правая граница
++ * @returns {number} Индекс разделения
+  */
+ function partition4(a, l, r) {
+     const v = a[Math.floor((l + r) / 2)];
+@@ -883,6 +1204,7 @@
+         while (a[j] > v) j--;
+         if (i >= j) break;
+         [a[i], a[j]] = [a[j], a[i]];
++        quickSort4Swaps++;
+         i++;
+         j--;
+     }
+@@ -891,6 +1213,10 @@
+ 
+ /**
+  * Итеративная быстрая сортировка (без рекурсии)
++ * @param {number[]} a - Сортируемый массив
++ * @param {number} l - Левая граница
++ * @param {number} r - Правая граница
++ * @returns {number[]} Отсортированный массив
+  */
+ function quickSort4(a, l = 0, r = a.length - 1) {
+     // Стек для хранения границ подмассивов и глубины
+@@ -898,7 +1224,7 @@
+     let iterations = 0;
+ 
+     while (stack.length > 0) {
+-        iterations++; // Считаем каждую итерацию (разделение)
++        iterations++;
+         const { l, r, depth } = stack.pop();
+ 
+         // Обновляем максимальную глубину
+@@ -921,7 +1247,7 @@
+         }
+     }
+ 
+-    quickSort4Calls = iterations; // Сохраняем количество итераций
++    quickSort4Calls = iterations;
+     return a;
+ }
+ 
+@@ -929,22 +1255,35 @@
+ // ЧАСТЬ 4 - МАССИВ С МАКСИМАЛЬНЫМ КОЛИЧЕСТВОМ СРАВНЕНИЙ (antiQsort)
+ // ==============================================
+ 
+-/*** Массив размеров тестируемых массивов.*/
+-const arr4 = [1000, 2000, 4000];
++/**
++ * Массив размеров тестируемых массивов для части 4
++ * @type {number[]}
++ */
++const arr4 = [1000];
+ 
+-/** Объект для хранения результатов замеров по каждому размеру N. */
+-const results4 = {};
++/**
++ * Объект для хранения результатов замеров по каждому размеру N для части 4
++ * @type {Object.<string, {time: number[], depth: number[], swaps: number[], calls: number[]}>}
++ */
++const results4 = {
++    time: {},
++    depth: {},
++    swaps: {},
++    calls: {}
++};
+ 
+-/** Массив всех точек замеров для общего графика. */
++/**
++ * Массив всех точек замеров для общего графика части 4
++ * @type {Array<{N: number, time: number}>}
++ */
+ const allPoints4 = [];
+ 
+-// Счётчики для части 4
+-let quickSort4Calls = 0;
+-let quickSort4MaxDepth = 0;
+-
+ // Инициализация массива результатов для каждого N
+ for (const N of arr4) {
+-    results4[N] = [];
++    results4.time[N] = [];
++    results4.depth[N] = [];
++    results4.swaps[N] = [];
++    results4.calls[N] = [];
+ }
+ 
+ console.log('\nЧАСТЬ 4: Тесты для всех значений N из списка:', arr4.join(', '), '\n');
+@@ -959,6 +1298,7 @@
+         // Сброс счётчиков перед тестом
+         quickSort4Calls = 0;
+         quickSort4MaxDepth = 0;
++        quickSort4Swaps = 0;
+ 
+         const start = performance.now();
+         quickSort4(vectorToSort, 0, vectorToSort.length - 1);
+@@ -967,20 +1307,27 @@
+         const timeMs = end - start;
+         const timeSec = timeMs / 1000;
+ 
+-        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort4Calls}, глубина=${quickSort4MaxDepth}`);
++        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort4Calls}, глубина=${quickSort4MaxDepth}, обменов=${quickSort4Swaps}`);
+ 
+-        results4[N].push(timeMs);
++        // Сохраняем все метрики
++        results4.time[N].push(timeMs);
++        results4.depth[N].push(quickSort4MaxDepth);
++        results4.swaps[N].push(quickSort4Swaps);
++        results4.calls[N].push(quickSort4Calls);
+         allPoints4.push({ N, time: timeMs });
+     }
+     console.log('');
+ }
+ 
+-/** Сохраняем все результаты в CSV файл.*/
+-let csvContent4 = 'N,Test,Time_ms\n';
++/**
++ * Сохраняем все результаты в CSV файл для части 4
++ * @type {string}
++ */
++let csvContent4 = 'N,Test,Time_ms,Depth,Swaps,Calls\n';
+ for (const N of arr4) {
+-    results4[N].forEach((time, index) => {
+-        csvContent4 += `${N},${index + 1},${time.toFixed(3)}\n`;
+-    });
++    for (let i = 0; i < results4.time[N].length; i++) {
++        csvContent4 += `${N},${i + 1},${results4.time[N][i].toFixed(3)},${results4.depth[N][i]},${results4.swaps[N][i]},${results4.calls[N][i]}\n`;
++    }
+ }
+ fs.writeFileSync('results_WorstCase.csv', csvContent4);
+ console.log('Результаты сохранены в results_WorstCase.csv\n');
+@@ -989,9 +1336,30 @@
+ // ФУНКЦИИ ДЛЯ ЧАСТИ 5 (объявляем ДО тестов)
+ // ==============================================
+ 
++// Счётчики для части 5
++/**
++ * Счетчик количества вызовов функции быстрой сортировки для части 5
++ * @type {number}
++ */
++let quickSort5Calls = 0;
++
++/**
++ * Максимальная глубина рекурсии для части 5
++ * @type {number}
++ */
++let quickSort5MaxDepth = 0;
++
++/**
++ * Счетчик количества обменов для части 5
++ * @type {number}
++ */
++let quickSort5Swaps = 0;
++
+ /**
+  * Создает массив, на котором быстрая сортировка с детерминированным выбором опорного элемента
+  * (например, всегда последний элемент) работает максимально долго (Θ(n²))
++ * @param {number} n - Размер массива
++ * @returns {number[]} Сгенерированный массив
+  */
+ function generateDeterministicWorstCase(n) {
+     const pairs = [];
+@@ -1040,6 +1408,10 @@
+ 
+ /**
+  * Разделение массива (с выбором последнего элемента в качестве опорного)
++ * @param {number[]} a - Массив для разделения
++ * @param {number} l - Левая граница
++ * @param {number} r - Правая граница
++ * @returns {number} Индекс разделения
+  */
+ function partitionLast(a, l, r) {
+     const v = a[r];
+@@ -1049,15 +1421,21 @@
+         if (a[j] <= v) {
+             i++;
+             [a[i], a[j]] = [a[j], a[i]];
++            quickSort5Swaps++;
+         }
+     }
+ 
+     [a[i + 1], a[r]] = [a[r], a[i + 1]];
++    quickSort5Swaps++;
+     return i + 1;
+ }
+ 
+ /**
+  * Итеративная быстрая сортировка (с выбором последнего элемента)
++ * @param {number[]} a - Сортируемый массив
++ * @param {number} l - Левая граница
++ * @param {number} r - Правая граница
++ * @returns {number[]} Отсортированный массив
+  */
+ function quickSortLast(a, l = 0, r = a.length - 1) {
+     const stack = [{ l, r, depth: 1 }];
+@@ -1093,22 +1471,35 @@
+ // ЧАСТЬ 5 - ДЕТЕРМИНИРОВАННЫЙ ХУДШИЙ СЛУЧАЙ
+ // ==============================================
+ 
+-/*** Массив размеров тестируемых массивов.*/
+-const arr5 = [1000, 2000, 4000];
++/**
++ * Массив размеров тестируемых массивов для части 5
++ * @type {number[]}
++ */
++const arr5 = [1000];
+ 
+-/** Объект для хранения результатов замеров по каждому размеру N. */
+-const results5 = {};
++/**
++ * Объект для хранения результатов замеров по каждому размеру N для части 5
++ * @type {Object.<string, {time: number[], depth: number[], swaps: number[], calls: number[]}>}
++ */
++const results5 = {
++    time: {},
++    depth: {},
++    swaps: {},
++    calls: {}
++};
+ 
+-/** Массив всех точек замеров для общего графика. */
++/**
++ * Массив всех точек замеров для общего графика части 5
++ * @type {Array<{N: number, time: number}>}
++ */
+ const allPoints5 = [];
+ 
+-// Счётчики для части 5
+-let quickSort5Calls = 0;
+-let quickSort5MaxDepth = 0;
+-
+ // Инициализация массива результатов для каждого N
+ for (const N of arr5) {
+-    results5[N] = [];
++    results5.time[N] = [];
++    results5.depth[N] = [];
++    results5.swaps[N] = [];
++    results5.calls[N] = [];
+ }
+ 
+ console.log('\nЧАСТЬ 5: Тесты для всех значений N из списка:', arr5.join(', '), '\n');
+@@ -1123,6 +1514,7 @@
+         // Сброс счётчиков перед тестом
+         quickSort5Calls = 0;
+         quickSort5MaxDepth = 0;
++        quickSort5Swaps = 0;
+ 
+         const start = performance.now();
+         quickSortLast(vectorToSort, 0, vectorToSort.length - 1);
+@@ -1131,20 +1523,27 @@
+         const timeMs = end - start;
+         const timeSec = timeMs / 1000;
+ 
+-        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort5Calls}, глубина=${quickSort5MaxDepth}`);
++        console.log(`  Тест ${test}: время=${timeSec.toFixed(4)}с, вызовов=${quickSort5Calls}, глубина=${quickSort5MaxDepth}, обменов=${quickSort5Swaps}`);
+ 
+-        results5[N].push(timeMs);
++        // Сохраняем все метрики
++        results5.time[N].push(timeMs);
++        results5.depth[N].push(quickSort5MaxDepth);
++        results5.swaps[N].push(quickSort5Swaps);
++        results5.calls[N].push(quickSort5Calls);
+         allPoints5.push({ N, time: timeMs });
+     }
+     console.log('');
+ }
+ 
+-/** Сохраняем все результаты в CSV файл.*/
+-let csvContent5 = 'N,Test,Time_ms\n';
++/**
++ * Сохраняем все результаты в CSV файл для части 5
++ * @type {string}
++ */
++let csvContent5 = 'N,Test,Time_ms,Depth,Swaps,Calls\n';
+ for (const N of arr5) {
+-    results5[N].forEach((time, index) => {
+-        csvContent5 += `${N},${index + 1},${time.toFixed(3)}\n`;
+-    });
++    for (let i = 0; i < results5.time[N].length; i++) {
++        csvContent5 += `${N},${i + 1},${results5.time[N][i].toFixed(3)},${results5.depth[N][i]},${results5.swaps[N][i]},${results5.calls[N][i]}\n`;
++    }
+ }
+ fs.writeFileSync('results_DeterministicWorstCase.csv', csvContent5);
+ console.log('Результаты сохранены в results_DeterministicWorstCase.csv\n');
+\ No newline at end of file
+Index: lab/lab_1/results.csv
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>N,Test,Time_ms\r\n1000,1,7.656\r\n1000,2,2.196\r\n1000,3,2.294\r\n1000,4,2.274\r\n1000,5,2.280\r\n1000,6,2.136\r\n1000,7,2.194\r\n1000,8,2.200\r\n1000,9,1.988\r\n1000,10,2.174\r\n1000,11,2.088\r\n1000,12,2.226\r\n1000,13,2.098\r\n1000,14,2.024\r\n1000,15,2.559\r\n1000,16,1.970\r\n1000,17,2.113\r\n1000,18,1.864\r\n1000,19,1.993\r\n1000,20,2.166\r\n2000,1,14.241\r\n2000,2,7.471\r\n2000,3,7.014\r\n2000,4,7.928\r\n2000,5,7.898\r\n2000,6,6.872\r\n2000,7,7.649\r\n2000,8,6.769\r\n2000,9,6.640\r\n2000,10,7.438\r\n2000,11,6.869\r\n2000,12,6.966\r\n2000,13,7.045\r\n2000,14,7.311\r\n2000,15,8.920\r\n2000,16,8.605\r\n2000,17,8.605\r\n2000,18,6.726\r\n2000,19,7.124\r\n2000,20,6.968\r\n4000,1,29.803\r\n4000,2,29.045\r\n4000,3,27.148\r\n4000,4,26.747\r\n4000,5,28.017\r\n4000,6,29.397\r\n4000,7,30.509\r\n4000,8,32.249\r\n4000,9,28.077\r\n4000,10,27.203\r\n4000,11,30.729\r\n4000,12,27.850\r\n4000,13,27.954\r\n4000,14,29.804\r\n4000,15,27.529\r\n4000,16,31.251\r\n4000,17,27.460\r\n4000,18,30.556\r\n4000,19,27.052\r\n4000,20,26.446\r\n8000,1,109.523\r\n8000,2,100.985\r\n8000,3,109.044\r\n8000,4,111.534\r\n8000,5,111.478\r\n8000,6,102.093\r\n8000,7,103.486\r\n8000,8,102.616\r\n8000,9,98.844\r\n8000,10,96.377\r\n8000,11,101.204\r\n8000,12,115.862\r\n8000,13,139.552\r\n8000,14,150.794\r\n8000,15,331.044\r\n8000,16,198.701\r\n8000,17,134.777\r\n8000,18,114.680\r\n8000,19,147.483\r\n8000,20,189.702\r\n16000,1,654.199\r\n16000,2,581.480\r\n16000,3,693.863\r\n16000,4,554.405\r\n16000,5,544.609\r\n16000,6,578.234\r\n16000,7,629.470\r\n16000,8,479.609\r\n16000,9,601.093\r\n16000,10,606.812\r\n16000,11,574.699\r\n16000,12,505.585\r\n16000,13,738.488\r\n16000,14,554.593\r\n16000,15,472.639\r\n16000,16,562.759\r\n16000,17,539.226\r\n16000,18,574.229\r\n16000,19,535.966\r\n16000,20,610.228\r\n32000,1,2131.915\r\n32000,2,2573.089\r\n32000,3,2874.297\r\n32000,4,2104.526\r\n32000,5,3587.030\r\n32000,6,2953.652\r\n32000,7,2269.259\r\n32000,8,2293.918\r\n32000,9,2263.244\r\n32000,10,2558.096\r\n32000,11,2621.429\r\n32000,12,2409.134\r\n32000,13,2464.250\r\n32000,14,2747.639\r\n32000,15,2957.845\r\n32000,16,2629.931\r\n32000,17,2170.451\r\n32000,18,2528.843\r\n32000,19,2033.788\r\n32000,20,1851.458\r\n64000,1,9028.572\r\n64000,2,8682.818\r\n64000,3,8102.169\r\n64000,4,9777.064\r\n64000,5,9278.791\r\n64000,6,8520.210\r\n64000,7,7908.467\r\n64000,8,8019.790\r\n64000,9,7866.697\r\n64000,10,8450.331\r\n64000,11,7368.357\r\n64000,12,7556.365\r\n64000,13,7845.755\r\n64000,14,8120.674\r\n64000,15,7058.543\r\n64000,16,7882.530\r\n64000,17,8686.764\r\n64000,18,8831.796\r\n64000,19,8665.564\r\n64000,20,8490.530\r\n128000,1,35920.062\r\n128000,2,31669.506\r\n128000,3,30895.587\r\n128000,4,31343.999\r\n128000,5,30665.827\r\n128000,6,30911.177\r\n128000,7,31452.851\r\n128000,8,29620.457\r\n128000,9,28943.743\r\n128000,10,33248.085\r\n128000,11,34049.589\r\n128000,12,34774.347\r\n128000,13,31546.146\r\n128000,14,33716.229\r\n128000,15,29601.479\r\n128000,16,29876.487\r\n128000,17,30083.454\r\n128000,18,31846.024\r\n128000,19,31856.865\r\n128000,20,30300.416\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/lab/lab_1/results.csv b/lab/lab_1/results.csv
+--- a/lab/lab_1/results.csv	(revision 0cebf3ef5961f8b2e4f12b744c3418904dcd6cdc)
++++ b/lab/lab_1/results.csv	(date 1772478079489)
+@@ -1,161 +1,41 @@
+ N,Test,Time_ms
+-1000,1,7.656
+-1000,2,2.196
+-1000,3,2.294
+-1000,4,2.274
+-1000,5,2.280
+-1000,6,2.136
+-1000,7,2.194
+-1000,8,2.200
+-1000,9,1.988
+-1000,10,2.174
+-1000,11,2.088
+-1000,12,2.226
+-1000,13,2.098
+-1000,14,2.024
+-1000,15,2.559
+-1000,16,1.970
+-1000,17,2.113
+-1000,18,1.864
+-1000,19,1.993
+-1000,20,2.166
+-2000,1,14.241
+-2000,2,7.471
+-2000,3,7.014
+-2000,4,7.928
+-2000,5,7.898
+-2000,6,6.872
+-2000,7,7.649
+-2000,8,6.769
+-2000,9,6.640
+-2000,10,7.438
+-2000,11,6.869
+-2000,12,6.966
+-2000,13,7.045
+-2000,14,7.311
+-2000,15,8.920
+-2000,16,8.605
+-2000,17,8.605
+-2000,18,6.726
+-2000,19,7.124
+-2000,20,6.968
+-4000,1,29.803
+-4000,2,29.045
+-4000,3,27.148
+-4000,4,26.747
+-4000,5,28.017
+-4000,6,29.397
+-4000,7,30.509
+-4000,8,32.249
+-4000,9,28.077
+-4000,10,27.203
+-4000,11,30.729
+-4000,12,27.850
+-4000,13,27.954
+-4000,14,29.804
+-4000,15,27.529
+-4000,16,31.251
+-4000,17,27.460
+-4000,18,30.556
+-4000,19,27.052
+-4000,20,26.446
+-8000,1,109.523
+-8000,2,100.985
+-8000,3,109.044
+-8000,4,111.534
+-8000,5,111.478
+-8000,6,102.093
+-8000,7,103.486
+-8000,8,102.616
+-8000,9,98.844
+-8000,10,96.377
+-8000,11,101.204
+-8000,12,115.862
+-8000,13,139.552
+-8000,14,150.794
+-8000,15,331.044
+-8000,16,198.701
+-8000,17,134.777
+-8000,18,114.680
+-8000,19,147.483
+-8000,20,189.702
+-16000,1,654.199
+-16000,2,581.480
+-16000,3,693.863
+-16000,4,554.405
+-16000,5,544.609
+-16000,6,578.234
+-16000,7,629.470
+-16000,8,479.609
+-16000,9,601.093
+-16000,10,606.812
+-16000,11,574.699
+-16000,12,505.585
+-16000,13,738.488
+-16000,14,554.593
+-16000,15,472.639
+-16000,16,562.759
+-16000,17,539.226
+-16000,18,574.229
+-16000,19,535.966
+-16000,20,610.228
+-32000,1,2131.915
+-32000,2,2573.089
+-32000,3,2874.297
+-32000,4,2104.526
+-32000,5,3587.030
+-32000,6,2953.652
+-32000,7,2269.259
+-32000,8,2293.918
+-32000,9,2263.244
+-32000,10,2558.096
+-32000,11,2621.429
+-32000,12,2409.134
+-32000,13,2464.250
+-32000,14,2747.639
+-32000,15,2957.845
+-32000,16,2629.931
+-32000,17,2170.451
+-32000,18,2528.843
+-32000,19,2033.788
+-32000,20,1851.458
+-64000,1,9028.572
+-64000,2,8682.818
+-64000,3,8102.169
+-64000,4,9777.064
+-64000,5,9278.791
+-64000,6,8520.210
+-64000,7,7908.467
+-64000,8,8019.790
+-64000,9,7866.697
+-64000,10,8450.331
+-64000,11,7368.357
+-64000,12,7556.365
+-64000,13,7845.755
+-64000,14,8120.674
+-64000,15,7058.543
+-64000,16,7882.530
+-64000,17,8686.764
+-64000,18,8831.796
+-64000,19,8665.564
+-64000,20,8490.530
+-128000,1,35920.062
+-128000,2,31669.506
+-128000,3,30895.587
+-128000,4,31343.999
+-128000,5,30665.827
+-128000,6,30911.177
+-128000,7,31452.851
+-128000,8,29620.457
+-128000,9,28943.743
+-128000,10,33248.085
+-128000,11,34049.589
+-128000,12,34774.347
+-128000,13,31546.146
+-128000,14,33716.229
+-128000,15,29601.479
+-128000,16,29876.487
+-128000,17,30083.454
+-128000,18,31846.024
+-128000,19,31856.865
+-128000,20,30300.416
++1000,1,7.736
++1000,2,2.540
++1000,3,2.080
++1000,4,2.237
++1000,5,2.009
++1000,6,2.200
++1000,7,1.846
++1000,8,2.018
++1000,9,1.883
++1000,10,1.919
++1000,11,2.098
++1000,12,2.786
++1000,13,1.694
++1000,14,1.928
++1000,15,1.887
++1000,16,1.784
++1000,17,2.032
++1000,18,1.925
++1000,19,2.043
++1000,20,2.205
++2000,1,7.629
++2000,2,7.784
++2000,3,7.687
++2000,4,7.748
++2000,5,8.161
++2000,6,8.791
++2000,7,6.943
++2000,8,7.385
++2000,9,6.414
++2000,10,7.023
++2000,11,6.352
++2000,12,6.920
++2000,13,6.559
++2000,14,7.588
++2000,15,6.322
++2000,16,6.425
++2000,17,6.317
++2000,18,6.451
++2000,19,6.501
++2000,20,8.861
+diff --git a/lab/lab_3/index.js b/lab/lab_3/index.js
+new file mode 100644
