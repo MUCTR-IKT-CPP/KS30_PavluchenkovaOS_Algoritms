@@ -1,25 +1,42 @@
 const fs = require('fs');
 const { createCanvas } = require('canvas');
 
-// -------------------------------
-// 1. Узел для обычного BST
-// -------------------------------
+/**
+ * Класс узла бинарного дерева поиска (BST)
+ * @class BSTNode
+ */
 class BSTNode {
+    /**
+     * Создает новый узел BST
+     * @param {number} value - Значение, хранящееся в узле
+     */
     constructor(value) {
+        /** Значение узла */
         this.value = value;
+        /** Левый потомок */
         this.left = null;
+        /** Правый потомок */
         this.right = null;
     }
 }
 
-// -------------------------------
-// 2. Обычное бинарное дерево поиска (рекурсивная версия)
-// -------------------------------
+/**
+ * Класс бинарного дерева поиска (Binary Search Tree)
+ * @class BinarySearchTree
+ * Следует правилу: левые потомки ≤ текущего узла < правые потомки.
+ */
 class BinarySearchTree {
+    /**
+     * Создает пустое бинарное дерево поиска
+     * @constructor
+     */
     constructor() {
         this.root = null;
     }
-
+    /**
+     * Рекурсивная вставка элемента в дерево
+     * @param value - Вставляемое значение
+     */
     insert(value) {
         const insertNode = (node, val) => {
             if (node === null) {
@@ -34,7 +51,11 @@ class BinarySearchTree {
         };
         this.root = insertNode(this.root, value);
     }
-
+    /**
+     * Рекурсивный поиск элемента в дереве
+     * @param {number} value - Искомое значение
+     * @returns {boolean} true - если элемент найден, false - в противном случае
+     */
     search(value) {
         const searchNode = (node, val) => {
             if (node === null) return false;
@@ -44,13 +65,22 @@ class BinarySearchTree {
         };
         return searchNode(this.root, value);
     }
-
+    /**
+     * Рекурсивное удаление элемента из дерева
+     * @param {number} value - Удаляемое значение
+     * @returns {void}
+     */
     delete(value) {
         const findMin = (node) => {
             while (node.left !== null) node = node.left;
             return node;
         };
-
+        /**
+         * Рекурсивная функция удаления узла
+         * @param {BSTNode|null} node - Текущий узел
+         * @param {number} val - Удаляемое значение
+         * @returns {BSTNode|null} Измененный узел или null
+         */
         const deleteNode = (node, val) => {
             if (node === null) return null;
 
@@ -59,15 +89,19 @@ class BinarySearchTree {
             } else if (val > node.value) {
                 node.right = deleteNode(node.right, val);
             } else {
+                // нет потомков
                 if (node.left === null && node.right === null) {
                     return null;
                 }
+                //  только левый потомок
                 if (node.left !== null && node.right === null) {
                     return node.left;
                 }
+                // только правый потомок
                 if (node.right !== null && node.left === null) {
                     return node.right;
                 }
+                // два потомка
                 const minRight = findMin(node.right);
                 node.value = minRight.value;
                 node.right = deleteNode(node.right, minRight.value);
@@ -79,9 +113,10 @@ class BinarySearchTree {
     }
 }
 
-// -------------------------------
-// 3. Узел для AVL-дерева
-// -------------------------------
+/**
+ * Класс узла AVL-дерева
+ * @class AVLNode
+ */
 class AVLNode {
     constructor(value) {
         this.value = value;
@@ -91,26 +126,44 @@ class AVLNode {
     }
 }
 
-// -------------------------------
-// 4. AVL-дерево
-// -------------------------------
+/**
+ * Класс AVL-дерева (самобалансирующееся бинарное дерево поиска)
+ * @class AVLTree
+ */
 class AVLTree {
+    /**
+     * Создает пустое AVL-дерево
+     * @constructor
+     */
     constructor() {
         this.root = null;
     }
-
+    /**
+     * Возвращает высоту узла
+     * @param {AVLNode|null} node - Узел дерева
+     * @returns {number} Высота узла (0 для null)
+     */
     getHeight(node) {
         return node ? node.height : 0;
     }
-
+    /**
+     * Обновляет высоту узла на основе высот потомков
+     * @param {AVLNode} node - Узел для обновления
+     */
     updateHeight(node) {
         node.height = Math.max(this.getHeight(node.left), this.getHeight(node.right)) + 1;
     }
-
+    /**
+     * Вычисляет баланс
+     * @param {AVLNode|null} node - Узел дерева
+     * @returns {number}  (высота_правого - высота_левого)
+     */
     getBalanceFactor(node) {
         return node ? this.getHeight(node.right) - this.getHeight(node.left) : 0;
     }
-
+    /**
+     * Малый правый поворот
+     */
     rotateRight(y) {
         const x = y.left;
         const T2 = x.right;
@@ -120,7 +173,9 @@ class AVLTree {
         this.updateHeight(x);
         return x;
     }
-
+    /**
+     * Малый левый поворот
+     */
     rotateLeft(x) {
         const y = x.right;
         const T2 = y.left;
@@ -130,7 +185,11 @@ class AVLTree {
         this.updateHeight(y);
         return y;
     }
-
+    /**
+     * Рекурсивный поиск элемента в дереве
+     * @param {number} value - Искомое значение
+     * @returns {boolean} true - если элемент найден, false - в противном случае
+     */
     search(value) {
         const searchNode = (node, val) => {
             if (node === null) return false;
@@ -140,7 +199,18 @@ class AVLTree {
         };
         return searchNode(this.root, value);
     }
-
+    /**
+     * Балансировка узла (применяет повороты при необходимости)
+     * @param {AVLNode|null} node - Узел для балансировки
+     * @returns {AVLNode|null} Сбалансированный узел
+     *
+     * @description
+     * Применяет один из 4 поворотов:
+     * - Малый правый: при левом перекосе с левым перекосом потомка
+     * - Малый левый: при правом перекосе с правым перекосом потомка
+     * - Большой правый: при левом перекосе с правым перекосом потомка
+     * - Большой левый: при правом перекосе с левым перекосом потомка
+     */
     balance(node) {
         if (node === null) return null;
 
@@ -169,7 +239,11 @@ class AVLTree {
         }
         return node;
     }
-
+    /**
+     * Рекурсивная вставка элемента в AVL-дерево
+     * @param {number} value - Вставляемое значение
+     * @returns {void}
+     */
     insert(value) {
         const insertNode = (node, val) => {
             if (node === null) {
@@ -186,13 +260,21 @@ class AVLTree {
         };
         this.root = insertNode(this.root, value);
     }
-
+    /**
+     * Рекурсивное удаление элемента из AVL-дерева
+     * @param {number} value - Удаляемое значение
+     */
     delete(value) {
         const findMin = (node) => {
             while (node.left !== null) node = node.left;
             return node;
         };
-
+        /**
+         * Рекурсивная функция удаления узла
+         * @param {AVLNode|null} node - Текущий узел
+         * @param {number} val - Удаляемое значение
+         * @returns {AVLNode|null} Измененный узел или null
+         */
         const deleteNode = (node, val) => {
             if (node === null) return null;
 
@@ -224,13 +306,18 @@ class AVLTree {
 // 5. ТЕСТОВАЯ СИСТЕМА
 // -------------------------------
 
-// Размеры массивов для тестирования (2^(10+i))
+/**
+ * Размеры массивов для тестирования (2^(10+i))
+ * @type {number[]}
+ */
 const sizes = [];
 for (let i = 0; i < 10; i++) {
     sizes.push(Math.pow(2, 10 + i));
 }
-
-// Структуры для хранения результатов
+/**
+ * Структуры для хранения результатов тестирования
+ * @type {Object}
+ */
 const bstRandomResults = {};   // BST случайные данные
 const bstSortedResults = {};   // BST отсортированные данные
 const avlRandomResults = {};   // AVL случайные данные
@@ -247,14 +334,12 @@ for (const size of sizes) {
     arrayRandomResults[size] = { search: [] };
     arraySortedResults[size] = { search: [] };
 }
-
-console.log('='.repeat(80));
-console.log('ЗАПУСК ТЕСТОВ');
-console.log('='.repeat(80));
-console.log('\n⚠️  Примечание: Для BST на отсортированных данных при размере > 8192');
-console.log('   происходит переполнение стека из-за вырожденного дерева (высота = n)');
-console.log('   Это соответствует лекции\n');
-
+/**
+ * Генерирует массив случайных чисел
+ * @param {number} size - Размер массива
+ * @param {number} [maxValue=1000000] - Максимальное значение элемента
+ * @returns {number[]} Массив случайных чисел
+ */
 function generateRandomArray(size, maxValue = 1000000) {
     const arr = [];
     for (let i = 0; i < size; i++) {
@@ -262,7 +347,11 @@ function generateRandomArray(size, maxValue = 1000000) {
     }
     return arr;
 }
-
+/**
+ * Генерирует отсортированный массив (по возрастанию)
+ * @param {number} size - Размер массива
+ * @returns {number[]} Отсортированный массив
+ */
 function generateSortedArray(size) {
     const arr = [];
     for (let i = 0; i < size; i++) {
@@ -270,14 +359,26 @@ function generateSortedArray(size) {
     }
     return arr;
 }
-
+/**
+ * Линейный поиск в массиве
+ * @param {number[]} arr - Массив для поиска
+ * @param {number} target - Искомое значение
+ * @returns {boolean} true - если элемент найден
+ * @complexity O(n)
+ */
 function searchInArray(arr, target) {
     for (let i = 0; i < arr.length; i++) {
         if (arr[i] === target) return true;
     }
     return false;
 }
-
+/**
+ * Бинарный поиск в отсортированном массиве
+ * @param {number[]} arr - Отсортированный массив для поиска
+ * @param {number} target - Искомое значение
+ * @returns {boolean} true - если элемент найден
+ * @complexity O(log n)
+ */
 function binarySearchInArray(arr, target) {
     let left = 0, right = arr.length - 1;
     while (left <= right) {
@@ -293,7 +394,7 @@ function binarySearchInArray(arr, target) {
 for (const size of sizes) {
     const skipBSTsorted = size > 8192;
 
-    console.log(`\n📊 Тест для N = ${size}`);
+    console.log(`\nТест для N = ${size}`);
 
     // 20 тестов: 10 случайных + 10 отсортированных
     for (let test = 1; test <= 20; test++) {
@@ -301,7 +402,7 @@ for (const size of sizes) {
         const phaseName = isRandomPhase ? "СЛУЧАЙНЫЙ" : "ОТСОРТИРОВАННЫЙ";
 
         if (test === 1 || test === 11) {
-            console.log(`  🔄 Фаза: ${phaseName}`);
+            console.log(`${phaseName}`);
         }
 
         const data = isRandomPhase
@@ -507,13 +608,6 @@ for (const size of sizes) {
     console.log(`    AVL удаление: мин=${(Math.min(...avlDelSorted)*1000).toFixed(2)}мкс, макс=${(Math.max(...avlDelSorted)*1000).toFixed(2)}мкс, сред=${(avlDelSorted.reduce((a,b)=>a+b,0)/avlDelSorted.length*1000).toFixed(2)}мкс`);
     console.log(`    Массив поиск: мин=${(Math.min(...arrSeaSorted)*1000).toFixed(2)}мкс, макс=${(Math.max(...arrSeaSorted)*1000).toFixed(2)}мкс, сред=${(arrSeaSorted.reduce((a,b)=>a+b,0)/arrSeaSorted.length*1000).toFixed(2)}мкс`);
 }
-
-// -------------------------------
-// 6. ПОСТРОЕНИЕ ГРАФИКОВ (как в первой лабе)
-// -------------------------------
-// -------------------------------
-// 6. ПОСТРОЕНИЕ ГРАФИКОВ (6 графиков)
-// -------------------------------
 
 function setupCanvas(width, height, title) {
     const canvas = createCanvas(width, height);
@@ -781,7 +875,7 @@ fs.writeFileSync('chart_2_insert_sorted.png', canvas2.toBuffer('image/png'));
 console.log('✅ chart_2_insert_sorted.png');
 
 // ==================== ГРАФИК 3: ПОИСК (случайные данные) ====================
-console.log('📊 Построение графика 3/6: Поиск (случайные данные) с массивом...');
+console.log(' Построение графика 3/6: Поиск (случайные данные) с массивом...');
 
 const searchRandomPoints = collectAllPoints(avlRandomResults, 'search', true);
 let maxY_searchRandom = Math.max(...searchRandomPoints.map(p => p.time), 1);
@@ -816,10 +910,10 @@ drawLegend(ctx3, [
 ], padding.left + 10, padding.top + 20);
 
 fs.writeFileSync('chart_3_search_random.png', canvas3.toBuffer('image/png'));
-console.log('✅ chart_3_search_random.png');
+console.log('chart_3_search_random.png');
 
 // ==================== ГРАФИК 4: ПОИСК (отсортированные данные) ====================
-console.log('📊 Построение графика 4/6: Поиск (отсортированные данные) с массивом...');
+console.log('Построение графика 4/6: Поиск (отсортированные данные) с массивом...');
 
 const searchSortedPoints = collectAllPoints(avlSortedResults, 'search', true);
 let maxY_searchSorted = Math.max(...searchSortedPoints.map(p => p.time), 1);
@@ -854,10 +948,10 @@ drawLegend(ctx4, [
 ], padding.left + 10, padding.top + 20);
 
 fs.writeFileSync('chart_4_search_sorted.png', canvas4.toBuffer('image/png'));
-console.log('✅ chart_4_search_sorted.png');
+console.log('chart_4_search_sorted.png');
 
 // ==================== ГРАФИК 5: УДАЛЕНИЕ (случайные данные) ====================
-console.log('📊 Построение графика 5/6: Удаление (случайные данные)...');
+console.log('Построение графика 5/6: Удаление (случайные данные)...');
 
 const deleteRandomPoints = collectAllPoints(avlRandomResults, 'delete', true);
 let maxY_deleteRandom = Math.max(...deleteRandomPoints.map(p => p.time), 1);
@@ -886,10 +980,10 @@ drawLegend(ctx5, [
 ], padding.left + 10, padding.top + 20);
 
 fs.writeFileSync('chart_5_delete_random.png', canvas5.toBuffer('image/png'));
-console.log('✅ chart_5_delete_random.png');
+console.log('chart_5_delete_random.png');
 
 // ==================== ГРАФИК 6: УДАЛЕНИЕ (отсортированные данные) ====================
-console.log('📊 Построение графика 6/6: Удаление (отсортированные данные)...');
+console.log('Построение графика 6/6: Удаление (отсортированные данные)...');
 
 const deleteSortedPoints = collectAllPoints(avlSortedResults, 'delete', true);
 let maxY_deleteSorted = Math.max(...deleteSortedPoints.map(p => p.time), 1);
@@ -925,12 +1019,9 @@ console.log('\n' + '='.repeat(80));
 console.log('ВСЕ 6 ГРАФИКОВ СОЗДАНЫ!');
 console.log('='.repeat(80));
 console.log('\nСохранённые файлы:');
-console.log('  📊 chart_1_insert_random.png     - Вставка (случайные данные)');
-console.log('  📊 chart_2_insert_sorted.png     - Вставка (отсортированные данные)');
-console.log('  📊 chart_3_search_random.png     - Поиск (случайные данные) + МАССИВ');
-console.log('  📊 chart_4_search_sorted.png     - Поиск (отсортированные данные) + МАССИВ');
-console.log('  📊 chart_5_delete_random.png     - Удаление (случайные данные)');
-console.log('  📊 chart_6_delete_sorted.png     - Удаление (отсортированные данные)');
-console.log('\n📖 Примечание: На графиках 3 и 4 добавлен график для обычного массива:');
-console.log('   - Для случайных данных: линейный поиск O(n)');
-console.log('   - Для отсортированных данных: бинарный поиск O(log n)');
+console.log('   chart_1_insert_random.png     - Вставка (случайные данные)');
+console.log('  chart_2_insert_sorted.png     - Вставка (отсортированные данные)');
+console.log('  chart_3_search_random.png     - Поиск (случайные данные) + МАССИВ');
+console.log('  chart_4_search_sorted.png     - Поиск (отсортированные данные) + МАССИВ');
+console.log('   chart_5_delete_random.png     - Удаление (случайные данные)');
+console.log('   chart_6_delete_sorted.png     - Удаление (отсортированные данные)');
