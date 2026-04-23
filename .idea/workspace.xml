@@ -5,31 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2d8ac661-b8df-4465-9e9d-06f23e95d5f2" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/lab/lab_7/chart_1_insert_time.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lab/lab_7/chart_2_delete_time.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lab/lab_7/chart_3_search_time.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lab/lab_7/chart_4_max_depth.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lab/lab_7/chart_5_max_depth_histogram.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lab/lab_7/chart_6_branch_depth_distribution.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lab/lab_7/delete_times.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lab/lab_7/depth_distribution.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lab/lab_7/insert_times.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lab/lab_7/max_depth.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lab/lab_7/search_times.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lab/lab_8/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab_7/chart_1_insert_time.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab_7/chart_2_delete_time.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab_7/chart_3_search_time.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab_7/chart_4_max_depth.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab_7/chart_5_max_depth_histogram.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab_7/chart_6_branch_depth_distribution.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab_7/delete_times.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab_7/depth_distribution.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab_7/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_7/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab_7/insert_times.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab_7/max_depth.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab_7/search_times.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab/lab_8/binary_heap_average.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_8/binary_heap_average.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab/lab_8/binary_heap_maximum.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_8/binary_heap_maximum.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab/lab_8/fibonacci_heap_average.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_8/fibonacci_heap_average.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab/lab_8/fibonacci_heap_maximum.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_8/fibonacci_heap_maximum.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab/lab_8/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_8/index.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -132,7 +113,7 @@
       <workItem from="1776273320978" duration="3779000" />
       <workItem from="1776513890538" duration="803000" />
       <workItem from="1776579858234" duration="2836000" />
-      <workItem from="1776940378229" duration="8312000" />
+      <workItem from="1776940378229" duration="9459000" />
     </task>
     <servers />
   </component>

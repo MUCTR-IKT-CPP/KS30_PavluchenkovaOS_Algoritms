@@ -1,17 +1,36 @@
 const { createCanvas } = require('canvas');
 const fs = require('fs');
 
-// ------------------------- Бинарная куча (min-heap) -------------------------
+/**
+ * Класс узла бинарной кучи (min-heap)
+ * Бинарная куча - структура данных, реализованная на основе массива,
+ * где каждый родительский узел меньше или равен своим потомкам
+ */
 class BinaryHeap {
     constructor() {
+        /** @type {Array} Массив для хранения элементов кучи */
         this.heap = [];
     }
 
+    /**
+     * Вставляет новый элемент в кучу
+     * Операция выполняется за O(log n)
+     * При вставке элемент помещается в конец массива,
+     * затем "всплывает" до нужной позиции для восстановления свойства кучи
+     * @param {number} key - Вставляемый ключ
+     */
     insert(key) {
         this.heap.push(key);
         this._bubbleUp(this.heap.length - 1);
     }
 
+    /**
+     * Всплытие элемента (балансировка после вставки)
+     * Больший элемент после вставки всплывает на позицию,
+     * на которой ему логично находиться исходя из основного правила кучи
+     * @param {number} index - Индекс элемента для всплытия
+     * @private
+     */
     _bubbleUp(index) {
         while (index > 0) {
             const parent = Math.floor((index - 1) / 2);
@@ -21,10 +40,22 @@ class BinaryHeap {
         }
     }
 
+    /**
+     * Поиск минимального элемента в куче
+     * В min-куче минимальный элемент всегда находится в корне (индекс 0)
+     * Сложность операции O(1)
+     * @returns {number|null} Минимальный элемент или null, если куча пуста
+     */
     findMin() {
         return this.heap.length === 0 ? null : this.heap[0];
     }
 
+    /**
+     * Удаление минимального элемента из кучи
+     * Операция выполняется за O(log n)
+     * Корень заменяется последним элементом, который затем "тонет" до нужной позиции
+     * @returns {number|null} Удаленный минимальный элемент или null, если куча пуста
+     */
     extractMin() {
         if (this.heap.length === 0) return null;
         const min = this.heap[0];
@@ -36,11 +67,18 @@ class BinaryHeap {
         return min;
     }
 
+    /**
+     * Утопление элемента (балансировка после удаления)
+     * Меньший элемент во время упорядочивания тонет до той позиции,
+     * на которой ему логично находиться исходя из основного правила кучи
+     * @param {number} index - Индекс элемента для утопления
+     * @private
+     */
     _sinkDown(index) {
         const length = this.heap.length;
         while (true) {
-            let left = 2 * index + 1;
-            let right = 2 * index + 2;
+            let left = 2 * index + 1;   // Левый потомок: 2 * i + 1
+            let right = 2 * index + 2;  // Правый потомок: 2 * i + 2
             let swap = null;
             let element = this.heap[index];
 
@@ -59,30 +97,60 @@ class BinaryHeap {
         }
     }
 
+    /**
+     * Возвращает количество элементов в куче
+     * @returns {number} Размер кучи
+     */
     size() {
         return this.heap.length;
     }
 }
 
-// ------------------------- Куча Фибоначчи (min-heap) -------------------------
+/**
+ * Класс узла Фибоначчиевой кучи
+ * Фибоначчиева куча - это биноминальная куча, у которой прощаются все операции,
+ * кроме операции удаления. За счет сознательного ухудшения состояния кучи внутри нее,
+ * мы предполагаем, что куча может иметь множество деревьев одинакового ранга
+ */
 class FibonacciNode {
+    /**
+     * Создает новый узел Фибоначчиевой кучи
+     * Каждый узел знает о своем предыдущем и следующем брате,
+     * а также о крайнем левом ребенке, что позволяет легко двигаться по куче
+     * @param {number} key - Ключ узла
+     */
     constructor(key) {
-        this.key = key;
-        this.parent = null;
-        this.child = null;
-        this.left = this;
-        this.right = this;
-        this.degree = 0;
-        this.mark = false;
+        this.key = key;           /** @type {number} Значение узла */
+        this.parent = null;      /** @type {FibonacciNode|null} Родительский узел */
+        this.child = null;       /** @type {FibonacciNode|null} Крайний левый ребенок */
+        this.left = this;        /** @type {FibonacciNode} Предыдущий брат */
+        this.right = this;       /** @type {FibonacciNode} Следующий брат */
+        this.degree = 0;         /** @type {number} Количество детей */
+        this.mark = false;       /** @type {boolean} Флаг, указывающий, был ли узел потерянным ребенком */
     }
 }
 
+/**
+ * Класс Фибоначчиевой кучи
+ * Реализует структуру данных, позволяющую выполнять большинство операций
+ * за амортизированное O(1), а удаление минимума - за O(log n)
+ */
 class FibonacciHeap {
     constructor() {
+        /** @type {FibonacciNode|null} Указатель на минимальный узел в куче */
         this.minNode = null;
+        /** @type {number} Количество узлов в куче */
         this.size = 0;
     }
 
+    /**
+     * Вставка нового элемента в кучу Фибоначчи
+     * При добавлении в дерево нового элемента просто добавляем в кучу дерево ранга 0,
+     * перепроверяя только минимум в куче
+     * Сложность: амортизированное O(1)
+     * @param {number} key - Вставляемый ключ
+     * @returns {FibonacciNode} Созданный узел
+     */
     insert(key) {
         const node = new FibonacciNode(key);
         if (this.minNode === null) {
@@ -97,6 +165,11 @@ class FibonacciHeap {
         return node;
     }
 
+    /**
+     * Добавляет узел в корневой список
+     * @param {FibonacciNode} node - Добавляемый узел
+     * @private
+     */
     _addToRootList(node) {
         if (this.minNode === null) {
             this.minNode = node;
@@ -109,6 +182,11 @@ class FibonacciHeap {
         this.minNode.left = node;
     }
 
+    /**
+     * Удаляет узел из корневого списка
+     * @param {FibonacciNode} node - Удаляемый узел
+     * @private
+     */
     _removeFromRootList(node) {
         if (node === this.minNode) {
             this.minNode = node.right;
@@ -119,14 +197,27 @@ class FibonacciHeap {
         node.right = node;
     }
 
+    /**
+     * Поиск минимального элемента
+     * Сложность: O(1)
+     * @returns {number|null} Значение минимального узла или null
+     */
     findMin() {
         return this.minNode ? this.minNode.key : null;
     }
 
+    /**
+     * Удаление минимального элемента
+     * Операция, которая проводит нормализацию дерева,
+     * объединяя все созданные дубликаты деревьев
+     * Сложность: амортизированное O(log n)
+     * @returns {number|null} Значение удаленного минимального узла или null
+     */
     extractMin() {
         const minNode = this.minNode;
         if (minNode === null) return null;
 
+        // Все дети минимального узла становятся корневыми узлами
         if (minNode.child !== null) {
             let child = minNode.child;
             const start = child;
@@ -144,12 +235,17 @@ class FibonacciHeap {
             this.minNode = null;
         } else {
             this.minNode = minNode.right;
-            this._consolidate();
+            this._consolidate();  // Объединение деревьев одинакового ранга
         }
         this.size--;
         return minNode.key;
     }
 
+    /**
+     * Консолидация - нормализация кучи после удаления минимума
+     * Объединяет деревья одинакового ранга для поддержания структуры
+     * @private
+     */
     _consolidate() {
         const maxDegree = Math.floor(Math.log2(this.size)) + 10;
         const degreeTable = new Array(maxDegree).fill(null);
@@ -190,6 +286,12 @@ class FibonacciHeap {
         }
     }
 
+    /**
+     * Связывает два узла, делая один ребенком другого
+     * @param {FibonacciNode} child - Узел, который станет ребенком
+     * @param {FibonacciNode} parent - Родительский узел
+     * @private
+     */
     _link(child, parent) {
         this._removeFromRootList(child);
         child.parent = parent;
@@ -209,19 +311,33 @@ class FibonacciHeap {
         child.mark = false;
     }
 
+    /**
+     * Возвращает количество элементов в куче
+     * @returns {number} Размер кучи
+     */
     getSize() {
         return this.size;
     }
 }
 
-// ------------------------- Измерения -------------------------
+/**
+ * Измеряет время выполнения одной операции
+ * @param {Function} fn - Измеряемая функция
+ * @returns {number} Время выполнения в наносекундах
+ */
 function measureOneOperation(fn) {
     const start = process.hrtime.bigint();
     fn();
     const end = process.hrtime.bigint();
-    return Number(end - start); // наносекунды
+    return Number(end - start);
 }
 
+/**
+ * Выполняет множественные измерения операции и вычисляет статистику
+ * @param {Function} fn - Измеряемая функция
+ * @param {number} iterations - Количество измерений
+ * @returns {Object} Объект с средним и максимальным временем
+ */
 function measureOperations(fn, iterations = 1000) {
     const times = [];
     for (let i = 0; i < iterations; i++) {
@@ -233,9 +349,9 @@ function measureOperations(fn, iterations = 1000) {
 }
 
 /**
- * Тепловой разогрев (warm-up) для JIT-компилятора.
- * Выполняет 100 операций каждого типа, чтобы V8 оптимизировал код
- * перед основными замерами.
+ * Прогрев кучи перед измерениями для стабилизации
+ * @param {Object} heap - Куча для прогрева
+ * @param {number} iterations - Количество итераций прогрева
  */
 function warmUp(heap, iterations = 100) {
     for (let i = 0; i < iterations; i++) {
@@ -245,6 +361,11 @@ function warmUp(heap, iterations = 100) {
     }
 }
 
+/**
+ * Генерирует массив случайных чисел
+ * @param {number} N - Размер массива
+ * @returns {number[]} Массив случайных чисел
+ */
 function generateRandomArray(N) {
     const arr = [];
     for (let i = 0; i < N; i++) {
@@ -253,6 +374,10 @@ function generateRandomArray(N) {
     return arr;
 }
 
+/**
+ * Запускает тестирование производительности куч
+ * @returns {Promise<Object>} Результаты тестирования
+ */
 async function runTests() {
     const results = {
         BinaryHeap: { findMin: {}, extractMin: {}, insert: {} },
@@ -261,46 +386,30 @@ async function runTests() {
 
     const exponents = [3, 4, 5, 6, 7];
     const Ns = exponents.map(e => Math.pow(10, e));
-
-    console.log('=' .repeat(60));
-    console.log('НАЧАЛО ТЕСТИРОВАНИЯ КУЧ');
-    console.log('=' .repeat(60));
-    console.log('• Выполняется тепловой разогрев (100 операций) перед каждым тестом\n');
-
     for (let idx = 0; idx < Ns.length; idx++) {
         const N = Ns[idx];
-        console.log(`\n📊 ТЕСТИРОВАНИЕ N = ${N} (${N.toLocaleString()} элементов)`);
+        console.log(`\nТЕСТИРОВАНИЕ N = ${N} (${N.toLocaleString()} элементов)`);
         console.log('-'.repeat(50));
 
         const initialData = generateRandomArray(N);
 
-        // ========== Бинарная куча ==========
-        console.log('\n  🔷 Бинарная куча:');
-
-        // --- findMin ---
+        // Тестирование бинарной кучи
         const bhFind = new BinaryHeap();
         for (let val of initialData) bhFind.insert(val);
-        console.log('    🔥 Тепловой разогрев...');
         warmUp(bhFind, 100);
         let { avg, max } = measureOperations(() => bhFind.findMin(), 1000);
         results.BinaryHeap.findMin[N] = { avg, max };
-        console.log(`    ✅ findMin    | среднее: ${avg.toFixed(1)} нс | максимум: ${max.toFixed(1)} нс`);
 
-        // --- extractMin (копия) ---
         const bhExtract = new BinaryHeap();
         for (let val of initialData) bhExtract.insert(val);
-        console.log('    🔥 Тепловой разогрев...');
         warmUp(bhExtract, 100);
         ({ avg, max } = measureOperations(() => {
             if (bhExtract.size() > 0) bhExtract.extractMin();
         }, 1000));
         results.BinaryHeap.extractMin[N] = { avg, max };
-        console.log(`    ✅ extractMin | среднее: ${avg.toFixed(1)} нс | максимум: ${max.toFixed(1)} нс`);
 
-        // --- insert (копия) ---
         const bhInsert = new BinaryHeap();
         for (let val of initialData) bhInsert.insert(val);
-        console.log('    🔥 Тепловой разогрев...');
         warmUp(bhInsert, 100);
         const insertData = generateRandomArray(1000);
         let insertIdx = 0;
@@ -309,16 +418,10 @@ async function runTests() {
             insertIdx++;
         }, 1000));
         results.BinaryHeap.insert[N] = { avg, max };
-        console.log(`    ✅ insert     | среднее: ${avg.toFixed(1)} нс | максимум: ${max.toFixed(1)} нс`);
 
-        // ========== Куча Фибоначчи ==========
-        console.log('\n  💚 Куча Фибоначчи:');
-
-        // --- findMin ---
+        // Тестирование кучи Фибоначчи
         const fhFind = new FibonacciHeap();
         for (let val of initialData) fhFind.insert(val);
-        console.log('    🔥 Тепловой разогрев...');
-        // Для Фибоначчи нужен специальный warm-up, т.к. нет метода size()
         for (let i = 0; i < 100; i++) {
             fhFind.findMin();
             if (fhFind.getSize() > 0) fhFind.extractMin();
@@ -326,12 +429,9 @@ async function runTests() {
         }
         ({ avg, max } = measureOperations(() => fhFind.findMin(), 1000));
         results.FibonacciHeap.findMin[N] = { avg, max };
-        console.log(`    ✅ findMin    | среднее: ${avg.toFixed(1)} нс | максимум: ${max.toFixed(1)} нс`);
 
-        // --- extractMin ---
         const fhExtract = new FibonacciHeap();
         for (let val of initialData) fhExtract.insert(val);
-        console.log('    🔥 Тепловой разогрев...');
         for (let i = 0; i < 100; i++) {
             fhExtract.findMin();
             if (fhExtract.getSize() > 0) fhExtract.extractMin();
@@ -341,12 +441,9 @@ async function runTests() {
             if (fhExtract.getSize() > 0) fhExtract.extractMin();
         }, 1000));
         results.FibonacciHeap.extractMin[N] = { avg, max };
-        console.log(`    ✅ extractMin | среднее: ${avg.toFixed(1)} нс | максимум: ${max.toFixed(1)} нс`);
 
-        // --- insert ---
         const fhInsert = new FibonacciHeap();
         for (let val of initialData) fhInsert.insert(val);
-        console.log('    🔥 Тепловой разогрев...');
         for (let i = 0; i < 100; i++) {
             fhInsert.findMin();
             if (fhInsert.getSize() > 0) fhInsert.extractMin();
@@ -358,19 +455,28 @@ async function runTests() {
             insertIdx++;
         }, 1000));
         results.FibonacciHeap.insert[N] = { avg, max };
-        console.log(`    ✅ insert     | среднее: ${avg.toFixed(1)} нс | максимум: ${max.toFixed(1)} нс`);
     }
 
     return results;
 }
 
-// ------------------------- Построение графиков -------------------------
+/**
+ * Форматирует время в наносекундах в читаемый вид
+ * @param {number} ns - Время в наносекундах
+ * @returns {string} Отформатированная строка времени
+ */
 function formatTime(ns) {
     if (ns >= 1000000) return (ns / 1000000).toFixed(2) + ' мс';
     if (ns >= 1000) return (ns / 1000).toFixed(2) + ' мкс';
     return ns.toFixed(1) + ' нс';
 }
 
+/**
+ * Сохраняет данные в CSV файл
+ * @param {string} filename - Имя файла
+ * @param {Object} data - Данные для сохранения
+ * @param {string[]} operationNames - Названия операций
+ */
 function saveCSV(filename, data, operationNames) {
     const sortedN = Object.keys(data[Object.keys(data)[0]]).sort((a, b) => Number(a) - Number(b));
     let csv = 'N,' + operationNames.join(',') + '\n';
@@ -382,20 +488,27 @@ function saveCSV(filename, data, operationNames) {
         csv += row + '\n';
     }
     fs.writeFileSync(filename, csv);
-    console.log(`  📄 Сохранён CSV: ${filename}`);
+    console.log(`Сохранён CSV: ${filename}`);
 }
 
+/**
+ * Строит комбинированный график результатов тестирования
+ * @param {Object} data - Данные для построения
+ * @param {string} title - Заголовок графика
+ * @param {string} filename - Имя выходного файла
+ * @param {string} ylabel - Подпись оси Y
+ */
 function plotCombinedGraph(data, title, filename, ylabel) {
     const width = 1000;
     const height = 700;
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
-    // Фон
+    // Заполнение белым фоном
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, width, height);
 
-    // Сетка
+    // Рисование сетки
     ctx.strokeStyle = '#E0E0E0';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= 5; i++) {
@@ -406,7 +519,7 @@ function plotCombinedGraph(data, title, filename, ylabel) {
         ctx.stroke();
     }
 
-    // Оси
+    // Рисование осей
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -415,11 +528,10 @@ function plotCombinedGraph(data, title, filename, ylabel) {
     ctx.lineTo(width - 60, height - 60);
     ctx.stroke();
 
-    // Подписи осей (русский)
+    // Подписи осей
     ctx.font = 'bold 18px Arial';
     ctx.fillStyle = '#000000';
-    ctx.fillText('Количество элементов N (логарифмическая шкала)', width / 2 - 200, height - 25);
-
+    ctx.fillText('Количество элементов N ', width / 2 - 200, height - 25);
     ctx.save();
     ctx.translate(35, height / 2);
     ctx.rotate(-Math.PI / 2);
@@ -431,7 +543,7 @@ function plotCombinedGraph(data, title, filename, ylabel) {
     ctx.fillStyle = '#2C3E50';
     ctx.fillText(title, width / 2 - 180, 45);
 
-    // Цвета для операций
+    // Цвета для различных типов операций
     const colors = {
         findMin: { line: '#27AE60', point: '#27AE60', name: 'Поиск минимума' },
         extractMin: { line: '#E74C3C', point: '#E74C3C', name: 'Удаление минимума' },
@@ -451,9 +563,8 @@ function plotCombinedGraph(data, title, filename, ylabel) {
     const xScale = (width - 140) / (Math.log10(maxX) - Math.log10(minX));
     const yScale = (height - 140) / maxY;
 
-    // Рисуем линии и точки для каждой операции
+    // Построение линий и точек для каждой операции
     for (let [op, color] of Object.entries(colors)) {
-        // Линия
         ctx.beginPath();
         let first = true;
         for (let N of sortedN) {
@@ -470,7 +581,7 @@ function plotCombinedGraph(data, title, filename, ylabel) {
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Точки
+        // Точки на графике
         for (let N of sortedN) {
             const x = 80 + Math.log10(N / minX) * xScale;
             const y = height - 60 - data[op][N] * yScale;
@@ -502,34 +613,27 @@ function plotCombinedGraph(data, title, filename, ylabel) {
         legendY += 30;
     }
 
+    // Сохранение графика
     const buffer = canvas.toBuffer('image/png');
     fs.writeFileSync(filename, buffer);
-    console.log(`  🖼️  Сохранён график: ${filename}`);
+    console.log(`  Сохранён график: ${filename}`);
 }
 
-// ------------------------- Главная функция -------------------------
+/**
+ * Главная функция выполнения тестирования и построения графиков
+ */
 async function main() {
-    console.log('\n🚀 ЗАПУСК ТЕСТОВ');
-    console.log('=' .repeat(60));
-    console.log('Особенности тестирования:');
-    console.log('  • Тепловой разогрев (100 операций) перед каждым замером');
-    console.log('  • 1000 итераций для каждой операции');
-    console.log('  • extractMin тестируется на отдельной копии кучи');
-    console.log('  • insert тестируется на отдельной копии кучи');
-    console.log('=' .repeat(60));
+    console.log("Запуск тестирования производительности куч...");
+    console.log("Исследуются бинарная куча и куча Фибоначчи");
+    console.log("Операции: поиск минимума, удаление минимума, вставка элемента\n");
 
     const results = await runTests();
-
-    // Подготовка данных для графиков
     const sortedN = Object.keys(results.BinaryHeap.findMin).sort((a, b) => Number(a) - Number(b));
 
-    // Данные для бинарной кучи (среднее)
+    // Подготовка данных для построения графиков
     const binaryAvgData = { findMin: {}, extractMin: {}, insert: {} };
-    // Данные для бинарной кучи (максимум)
     const binaryMaxData = { findMin: {}, extractMin: {}, insert: {} };
-    // Данные для кучи Фибоначчи (среднее)
     const fibAvgData = { findMin: {}, extractMin: {}, insert: {} };
-    // Данные для кучи Фибоначчи (максимум)
     const fibMaxData = { findMin: {}, extractMin: {}, insert: {} };
 
     for (let N of sortedN) {
@@ -550,20 +654,9 @@ async function main() {
         fibMaxData.insert[N] = results.FibonacciHeap.insert[N].max;
     }
 
-    console.log('\n\n📁 СОХРАНЕНИЕ РЕЗУЛЬТАТОВ');
-    console.log('=' .repeat(60));
+    // Построение всех графиков
+    console.log("\nПостроение графиков...");
 
-    // Сохраняем CSV файлы
-    console.log('\n📊 CSV файлы:');
-    saveCSV('binary_heap_avg.csv', binaryAvgData, ['findMin', 'extractMin', 'insert']);
-    saveCSV('binary_heap_max.csv', binaryMaxData, ['findMin', 'extractMin', 'insert']);
-    saveCSV('fibonacci_heap_avg.csv', fibAvgData, ['findMin', 'extractMin', 'insert']);
-    saveCSV('fibonacci_heap_max.csv', fibMaxData, ['findMin', 'extractMin', 'insert']);
-
-    // Строим 4 графика
-    console.log('\n📈 Построение графиков:');
-
-    // График 1: Бинарная куча - среднее время
     plotCombinedGraph(
         binaryAvgData,
         'Бинарная куча - Среднее время операции (1000 замеров)',
@@ -571,7 +664,6 @@ async function main() {
         'Время (логарифмическая шкала)'
     );
 
-    // График 2: Бинарная куча - максимальное время
     plotCombinedGraph(
         binaryMaxData,
         'Бинарная куча - Максимальное время одной операции',
@@ -579,7 +671,6 @@ async function main() {
         'Время (логарифмическая шкала)'
     );
 
-    // График 3: Куча Фибоначчи - среднее время
     plotCombinedGraph(
         fibAvgData,
         'Куча Фибоначчи - Среднее время операции (1000 замеров)',
@@ -587,32 +678,12 @@ async function main() {
         'Время (логарифмическая шкала)'
     );
 
-    // График 4: Куча Фибоначчи - максимальное время
     plotCombinedGraph(
         fibMaxData,
         'Куча Фибоначчи - Максимальное время одной операции',
         'fibonacci_heap_maximum.png',
         'Время (логарифмическая шкала)'
     );
-
-    console.log('\n' + '=' .repeat(60));
-    console.log('✅ ВСЕ ТЕСТЫ УСПЕШНО ЗАВЕРШЕНЫ');
-    console.log('=' .repeat(60));
-    console.log('\n📋 ИТОГОВЫЕ ФАЙЛЫ:');
-    console.log('  CSV:');
-    console.log('    • binary_heap_avg.csv       - среднее время (бинарная куча)');
-    console.log('    • binary_heap_max.csv       - максимальное время (бинарная куча)');
-    console.log('    • fibonacci_heap_avg.csv    - среднее время (Фибоначчи)');
-    console.log('    • fibonacci_heap_max.csv    - максимальное время (Фибоначчи)');
-    console.log('  Графики:');
-    console.log('    • binary_heap_average.png   - бинарная куча (среднее)');
-    console.log('    • binary_heap_maximum.png   - бинарная куча (максимум)');
-    console.log('    • fibonacci_heap_average.png - Фибоначчи (среднее)');
-    console.log('    • fibonacci_heap_maximum.png - Фибоначчи (максимум)');
-    console.log('\n💡 Примечания:');
-    console.log('  • extractMin тестировался на отдельной копии кучи');
-    console.log('  • insert тестировался на отдельной копии кучи');
-    console.log('  • Выполнен тепловой разогрев JIT-компилятора (100 операций)\n');
 }
 
 main().catch(console.error);
