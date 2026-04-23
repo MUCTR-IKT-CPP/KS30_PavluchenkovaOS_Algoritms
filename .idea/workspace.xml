@@ -5,17 +5,31 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2d8ac661-b8df-4465-9e9d-06f23e95d5f2" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/lab_7/index.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_7/chart_1_insert_time.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_7/chart_2_delete_time.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_7/chart_3_search_time.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_7/chart_4_max_depth.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_7/chart_5_max_depth_histogram.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_7/chart_6_branch_depth_distribution.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_7/delete_times.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_7/depth_distribution.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_7/insert_times.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_7/max_depth.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_7/search_times.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_8/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_6/chart_1_insert_random.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_6/chart_1_insert_random.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_6/chart_2_insert_sorted.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_6/chart_2_insert_sorted.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_6/chart_3_search_random.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_6/chart_3_search_random.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_6/chart_4_search_sorted.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_6/chart_4_search_sorted.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_6/chart_5_delete_random.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_6/chart_5_delete_random.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_6/chart_6_delete_sorted.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_6/chart_6_delete_sorted.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_6/delete_results.csv" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_6/delete_results.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_6/insert_results.csv" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_6/insert_results.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_6/search_results.csv" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_6/search_results.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab_7/chart_1_insert_time.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab_7/chart_2_delete_time.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab_7/chart_3_search_time.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab_7/chart_4_max_depth.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab_7/chart_5_max_depth_histogram.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab_7/chart_6_branch_depth_distribution.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab_7/delete_times.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab_7/depth_distribution.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab_7/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_7/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab_7/insert_times.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab_7/max_depth.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab_7/search_times.csv" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,6 +52,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;pasiwka&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/MUCTR-IKT-CPP/KS30_PavluchenkovaOS_Algoritms&quot;,
+    &quot;accountId&quot;: &quot;d583c447-9b77-4394-bf34-e80f2eba1223&quot;
+  }
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6
 }</component>
@@ -46,31 +72,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Node.js.index.js.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.index.mjs.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.queue-linked-list.mjs.executor&quot;: &quot;Run&quot;,
-    &quot;Node.js.sort.js.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Admin/Desktop/KS30_PavluchenkovaOS_Algoritms&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Node.js.heaps.js.executor": "Run",
+    "Node.js.index.js.executor": "Run",
+    "Node.js.index.mjs.executor": "Run",
+    "Node.js.queue-linked-list.mjs.executor": "Run",
+    "Node.js.sort.js.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "dart.analysis.tool.window.visible": "false",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "C:/Users/Admin/Desktop/KS30_PavluchenkovaOS_Algoritms",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Admin\Desktop\KS30_PavluchenkovaOS_Algoritms\lab" />
@@ -101,7 +128,11 @@
       <workItem from="1775673369878" duration="1178000" />
       <workItem from="1775823252400" duration="5371000" />
       <workItem from="1776001097880" duration="7814000" />
-      <workItem from="1776257591279" duration="4406000" />
+      <workItem from="1776257591279" duration="5208000" />
+      <workItem from="1776273320978" duration="3779000" />
+      <workItem from="1776513890538" duration="803000" />
+      <workItem from="1776579858234" duration="2836000" />
+      <workItem from="1776940378229" duration="8312000" />
     </task>
     <servers />
   </component>
