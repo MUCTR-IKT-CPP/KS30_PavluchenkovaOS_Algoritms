@@ -121,12 +121,10 @@ class FibonacciNode {
      */
     constructor(key) {
         this.key = key;           /** @type {number} Значение узла */
-        this.parent = null;      /** @type {FibonacciNode|null} Родительский узел */
         this.child = null;       /** @type {FibonacciNode|null} Крайний левый ребенок */
         this.left = this;        /** @type {FibonacciNode} Предыдущий брат */
         this.right = this;       /** @type {FibonacciNode} Следующий брат */
         this.degree = 0;         /** @type {number} Количество детей */
-        this.mark = false;       /** @type {boolean} Флаг, указывающий, был ли узел потерянным ребенком */
     }
 }
 
@@ -247,7 +245,7 @@ class FibonacciHeap {
      * @private
      */
     _consolidate() {
-        const maxDegree = Math.floor(Math.log2(this.size)) + 10;
+        const maxDegree = Math.floor(Math.log2(this.size));
         const degreeTable = new Array(maxDegree).fill(null);
 
         const rootList = [];
@@ -308,7 +306,6 @@ class FibonacciHeap {
             first.left = child;
         }
         parent.degree++;
-        child.mark = false;
     }
 
     /**
@@ -629,7 +626,6 @@ async function main() {
 
     const results = await runTests();
     const sortedN = Object.keys(results.BinaryHeap.findMin).sort((a, b) => Number(a) - Number(b));
-
     // Подготовка данных для построения графиков
     const binaryAvgData = { findMin: {}, extractMin: {}, insert: {} };
     const binaryMaxData = { findMin: {}, extractMin: {}, insert: {} };
