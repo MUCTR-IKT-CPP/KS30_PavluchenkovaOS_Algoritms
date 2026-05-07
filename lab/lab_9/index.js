@@ -2,13 +2,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const { createCanvas } = require('canvas');
 
-// ======================== SHA-256 ========================
-
 /**
  * Вычисление хеша SHA-256 для входных данных
- * Реализует алгоритм SHA-2 с выходом 256 бит (64 hex-символа)
- * Обладает свойствами: детерминированность, лавинный эффект, криптостойкость
- * Сложность: O(n) где n - длина входных данных
  * @param {string} data - Входные данные произвольной длины
  * @returns {string} Хеш в виде hex-строки (64 символа)
  */
@@ -16,12 +11,8 @@ function sha256(data) {
     return crypto.createHash('sha256').update(data, 'utf8').digest('hex');
 }
 
-// ======================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ========================
-
 /**
  * Генерация случайной строки заданной длины
- * Используется для создания тестовых данных
- * Сложность: O(n)
  * @param {number} length - Длина генерируемой строки
  * @returns {string} Случайная строка из латинских букв и цифр
  */
@@ -143,7 +134,7 @@ function plotTest1Graph(data, filename) {
     ctx.save();
     ctx.translate(35, height / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillText('Максимальная длина одинаковой последовательности', -20, 0);
+    ctx.fillText('Максимальная длина ', -20, 0);
     ctx.restore();
 
     ctx.font = 'bold 22px Arial';

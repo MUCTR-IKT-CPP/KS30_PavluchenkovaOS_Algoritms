@@ -5,13 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2d8ac661-b8df-4465-9e9d-06f23e95d5f2" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/lab/lab_9/index.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lab/lab_10/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_8/binary_heap_average.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_8/binary_heap_average.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_8/binary_heap_maximum.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_8/binary_heap_maximum.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_8/fibonacci_heap_average.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_8/fibonacci_heap_average.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_8/fibonacci_heap_maximum.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_8/fibonacci_heap_maximum.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lab/lab_8/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_8/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab/lab_9/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_9/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab/lab_9/test1_graph.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_9/test1_graph.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab/lab_9/test1_results.csv" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_9/test1_results.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab/lab_9/test3_graph.png" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_9/test3_graph.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab/lab_9/test3_results.csv" beforeDir="false" afterPath="$PROJECT_DIR$/lab/lab_9/test3_results.csv" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -116,7 +116,9 @@
       <workItem from="1776579858234" duration="2836000" />
       <workItem from="1776940378229" duration="20141000" />
       <workItem from="1777201587727" duration="4522000" />
-      <workItem from="1777567576496" duration="2421000" />
+      <workItem from="1777567576496" duration="10577000" />
+      <workItem from="1777916961289" duration="13000" />
+      <workItem from="1778160286046" duration="3957000" />
     </task>
     <servers />
   </component>
